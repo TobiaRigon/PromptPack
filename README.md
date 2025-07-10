@@ -1,4 +1,4 @@
-Crea un'applicazione Python con interfaccia grafica usando PySimpleGUI, chiamata "PromptPack".
+Crea un'applicazione Python con interfaccia grafica usando PySimpleGUI, chiamata **PromptPack**.  Il file principale è `promptpack.py`.
 
 Obiettivo: generare un file `.md` o `.txt` contenente il contenuto di file sorgente, utile come prompt AI.
 
