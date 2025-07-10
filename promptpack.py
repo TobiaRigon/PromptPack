@@ -44,7 +44,7 @@ def apply_icon(window):
         if os.path.exists(icon_path):
             window.iconbitmap(icon_path)
     except Exception as e:
-        print(f"Icona non caricata: {e}")
+        print(f"Icon not loaded: {e}")
 
 class PromptPackApp:
     def __init__(self, root):
@@ -69,20 +69,20 @@ class PromptPackApp:
         self.build_gui()
 
     def build_gui(self):
-        tk.Label(self.root, text="Cartella di partenza").grid(row=0, column=0, sticky='w', padx=5, pady=5)
+        tk.Label(self.root, text="Source Folder").grid(row=0, column=0, sticky='w', padx=5, pady=5)
         tk.Entry(self.root, textvariable=self.start_folder, width=50).grid(row=0, column=1, padx=5)
-        tk.Button(self.root, text="Sfoglia", command=self.browse_start).grid(row=0, column=2)
+        tk.Button(self.root, text="Browse", command=self.browse_start).grid(row=0, column=2)
 
-        tk.Button(self.root, text="Seleziona file", command=self.select_files).grid(row=1, column=1, pady=5)
-        tk.Button(self.root, text="Impostazioni", command=self.configure_settings).grid(row=1, column=2)
+        tk.Button(self.root, text="Select Files", command=self.select_files).grid(row=1, column=1, pady=5)
+        tk.Button(self.root, text="Settings", command=self.configure_settings).grid(row=1, column=2)
 
         tk.Checkbutton(self.root, text="Live Preview", variable=self.enable_preview, command=self.toggle_preview_window).grid(row=2, column=1, sticky='w')
 
-        tk.Label(self.root, text="Cartella di destinazione").grid(row=3, column=0, sticky='w', padx=5, pady=5)
+        tk.Label(self.root, text="Destination Folder").grid(row=3, column=0, sticky='w', padx=5, pady=5)
         tk.Entry(self.root, textvariable=self.dest_folder, width=50).grid(row=3, column=1, padx=5)
-        tk.Button(self.root, text="Sfoglia", command=self.browse_dest).grid(row=3, column=2)
+        tk.Button(self.root, text="Browse", command=self.browse_dest).grid(row=3, column=2)
 
-        tk.Button(self.root, text="Genera", command=self.generate).grid(row=4, column=1, pady=10)
+        tk.Button(self.root, text="Generate", command=self.generate).grid(row=4, column=1, pady=10)
 
     def browse_start(self):
         folder = filedialog.askdirectory()
@@ -97,23 +97,23 @@ class PromptPackApp:
 
     def configure_settings(self):
         win = Toplevel(self.root)
-        win.title("Impostazioni")
+        win.title("Settings")
         apply_icon(win)
         win.geometry("500x400")
 
         def prompt_list(title, key):
-            result = simpledialog.askstring(title, f"{title} (separati da virgola):",
+            result = simpledialog.askstring(title, f"{title} (comma separated):",
                                             initialvalue=",".join(self.settings[key]), parent=win)
             if result is not None:
                 self.settings[key] = [x.strip() for x in result.split(",") if x.strip()]
 
-        tk.Button(win, text="Estensioni incluse", command=lambda: prompt_list("Estensioni incluse", "allowed_exts")).pack(pady=5)
-        tk.Button(win, text="Cartelle escluse", command=lambda: prompt_list("Cartelle escluse", "excluded_dirs")).pack(pady=5)
-        tk.Button(win, text="File esclusi", command=lambda: prompt_list("File esclusi", "excluded_files")).pack(pady=5)
+        tk.Button(win, text="Allowed Extensions", command=lambda: prompt_list("Allowed Extensions", "allowed_exts")).pack(pady=5)
+        tk.Button(win, text="Excluded Directories", command=lambda: prompt_list("Excluded Directories", "excluded_dirs")).pack(pady=5)
+        tk.Button(win, text="Excluded Files", command=lambda: prompt_list("Excluded Files", "excluded_files")).pack(pady=5)
 
-        tk.Checkbutton(win, text="Formato Markdown", variable=self.as_markdown).pack(anchor='w')
-        tk.Checkbutton(win, text="Includi intestazioni file", variable=self.include_heading).pack(anchor='w')
-        tk.Checkbutton(win, text="Blocchi di codice", variable=self.use_code_block).pack(anchor='w')
+        tk.Checkbutton(win, text="Markdown Format", variable=self.as_markdown).pack(anchor='w')
+        tk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(anchor='w')
+        tk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(anchor='w')
 
         def save_and_close():
             self.settings["as_markdown"] = self.as_markdown.get()
@@ -122,7 +122,7 @@ class PromptPackApp:
             save_settings(self.settings)
             win.destroy()
 
-        tk.Button(win, text="Salva", command=save_and_close).pack(pady=10)
+        tk.Button(win, text="Save", command=save_and_close).pack(pady=10)
 
     def is_valid(self, f):
         return f.suffix in self.settings["allowed_exts"] and f.name not in self.settings["excluded_files"]
@@ -136,7 +136,7 @@ class PromptPackApp:
             preview_text = self.get_preview_text(self.selected_files)
             if self.preview_window is None or not self.preview_window.winfo_exists():
                 self.preview_window = Toplevel(self.root)
-                self.preview_window.title("Anteprima")
+                self.preview_window.title("Preview")
                 apply_icon(self.preview_window)
                 self.preview_text = tk.Text(self.preview_window, wrap="word")
                 self.preview_text.pack(fill="both", expand=True)
@@ -150,17 +150,17 @@ class PromptPackApp:
     def select_files(self):
         folder = self.start_folder.get()
         if not folder:
-            messagebox.showerror("Errore", "Seleziona prima la cartella di partenza")
+            messagebox.showerror("Error", "Please select the source folder first")
             return
 
         selector = Toplevel(self.root)
-        selector.title("Seleziona file da includere")
+        selector.title("Select Files to Include")
         apply_icon(selector)
         selector.geometry("850x500")
 
         tree = ttk.Treeview(selector, columns=("fullpath", "type"))
-        tree.heading("#0", text="Nome")
-        tree.heading("type", text="Tipo")
+        tree.heading("#0", text="Name")
+        tree.heading("type", text="Type")
         tree.column("fullpath", width=0, stretch=False)
         tree.column("type", width=80)
         tree.pack(fill=tk.BOTH, expand=True)
@@ -188,7 +188,7 @@ class PromptPackApp:
                 preview_text = self.get_preview_text({Path(p) for p, var in checkbox_vars.items() if var.get()})
                 if self.preview_window is None or not self.preview_window.winfo_exists():
                     self.preview_window = Toplevel(self.root)
-                    self.preview_window.title("Anteprima")
+                    self.preview_window.title("Preview")
                     apply_icon(self.preview_window)
                     self.preview_text = tk.Text(self.preview_window, wrap="word")
                     self.preview_text.pack(fill="both", expand=True)
@@ -219,7 +219,7 @@ class PromptPackApp:
                 self.preview_window.destroy()
                 self.preview_window = None
 
-        tk.Button(selector, text="Conferma selezione", command=confirm).pack(pady=5)
+        tk.Button(selector, text="Confirm Selection", command=confirm).pack(pady=5)
 
     def get_preview_text(self, included_files):
         return "\n".join(self.generate_preview_lines(self.start_folder.get(), included_files))
@@ -228,7 +228,7 @@ class PromptPackApp:
         lines = []
         project_name = Path(start_folder).name
         date_str = datetime.now().strftime('%Y%m%d')
-        lines.append(f"Progetto: {project_name} - {date_str}\n")
+        lines.append(f"Project: {project_name} - {date_str}\n")
 
         for path in sorted(included_files):
             try:
@@ -247,10 +247,10 @@ class PromptPackApp:
 
     def generate(self):
         if not self.start_folder.get() or not self.dest_folder.get():
-            messagebox.showerror("Errore", "Seleziona entrambe le cartelle")
+            messagebox.showerror("Error", "Please select both source and destination folders")
             return
         if not self.selected_files:
-            messagebox.showerror("Errore", "Nessun file selezionato")
+            messagebox.showerror("Error", "No files selected")
             return
         try:
             output_path = generate_output(
@@ -261,15 +261,15 @@ class PromptPackApp:
                 self.include_heading.get(),
                 self.use_code_block.get()
             )
-            messagebox.showinfo("Fatto", f"File generato: {output_path}")
+            messagebox.showinfo("Done", f"File generated: {output_path}")
         except Exception as e:
-            messagebox.showerror("Errore", str(e))
+            messagebox.showerror("Error", str(e))
 
 def generate_output(start_folder, dest_folder, included_files, as_markdown, include_heading, use_code_block):
     lines = []
     project_name = Path(start_folder).name
     date_str = datetime.now().strftime('%Y%m%d')
-    lines.append(f"Progetto: {project_name} - {date_str}\n\n")
+    lines.append(f"Project: {project_name} - {date_str}\n\n")
 
     for path in included_files:
         try:
