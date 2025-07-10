@@ -1,39 +1,95 @@
-Crea un'applicazione Python con interfaccia grafica usando PySimpleGUI, chiamata **PromptPack**.  Il file principale è `promptpack.py`.
+# PromptPack
 
-Obiettivo: generare un file `.md` o `.txt` contenente il contenuto di file sorgente, utile come prompt AI.
+**PromptPack** is a desktop application written in Python with Tkinter that allows you to quickly generate a Markdown or plain text summary of selected source files from a project folder. It's designed for developers and technical writers who need to prepare code documentation, share source samples, or create prompt material for LLMs.
 
-Funzionalità richieste:
+## Features
 
-1. Interfaccia iniziale con:
+- GUI for selecting a source folder and choosing which files to include
+- Treeview interface with checkboxes for including/excluding individual files
+- Live preview window to see the generated output before exporting
+- Default filters for file extensions and folders (e.g., skip `.env`, `node_modules`, `.git`, etc.)
+- Saves and loads user settings to/from a JSON file
+- Option to format output as Markdown with code blocks, headings, and file separators
 
-   - Campo per selezionare una **cartella di partenza (progetto)**
-   - Campo multiselezione per scegliere le **estensioni di file da includere** (default: .php, .js, .ts, .html, .css)
-   - Campo multiselezione per indicare **cartelle da escludere** (es. vendor, node_modules, .git, ecc.)
-   - Campo multiselezione per **file da escludere** (es. .env, README.md, ecc.)
-   - Scelta tra **formato output**: `.md` o `.txt`
-   - Checkbox per opzioni di formattazione:
-     - Includere nomi file come intestazioni (`## path/to/file`)
-     - Usare blocchi di codice (` ```lang ... ``` `) se formato Markdown
-   - Pulsante per **selezionare la cartella di destinazione**
-   - Pulsante "Genera"
+## Requirements
 
-2. Quando si clicca su "Genera":
+- Python 3.7+
+- Tkinter (comes pre-installed with Python on most systems)
 
-   - L'app scandisce i file ricorsivamente dalla cartella sorgente
-   - Filtra in base a estensioni, esclusioni e regole definite
-   - Costruisce un file di output contenente:
-     - Header con nome progetto e data (`YYYYMMDD`)
-     - Per ogni file: percorso relativo + contenuto
-     - Se output è `.md`, usa blocchi di codice con linguaggio rilevato da estensione
-     - Se output è `.txt`, il contenuto è grezzo, senza markdown
+## Installation
 
-3. Il file risultante viene salvato nella cartella destinazione, con nome:  
-   `nomeprogetto-YYYYMMDD.md` o `.txt`
+1. Clone or download the repository.
+2. (Optional) Create a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # on Linux/macOS
+   venv\Scripts\activate     # on Windows
+   ```
+3. Run the script:
+   ```bash
+   python promptpack.py
+   ```
 
-4. Mostrare un popup finale con il messaggio: "File generato in: [percorso completo]"
+## How to Use
 
-Requisiti tecnici:
+1. **Start Folder**: Click *Browse* to select the folder containing the files you want to include.
+2. **Select Files**: Opens an expandable tree of all folders and files. You can include/exclude each item via checkboxes.
+   - Default selections are based on the current settings.
+3. **Settings**: Define default allowed extensions, excluded folders and files. Also choose:
+   - Markdown output
+   - Include file headings
+   - Use code blocks for each file
+4. **Live Preview**: Enables a real-time preview of the final output file.
+5. **Destination Folder**: Choose where the final file will be saved.
+6. **Generate**: Creates a Markdown or plain text file containing the selected source files, formatted according to your settings.
 
-- Usa solo librerie standard + PySimpleGUI
-- Compatibile con PyInstaller per essere compilato come eseguibile Windows
-- Usa `pathlib` per la gestione dei percorsi
+## Settings
+
+User preferences are saved in a file named `promptpack_settings.json` in the same folder as the script. It stores:
+
+```json
+{
+  "allowed_exts": [".php", ".js", ".ts", ".html", ".css", ".py"],
+  "excluded_dirs": ["vendor", ".git", "node_modules"],
+  "excluded_files": [".env", "README.md"],
+  "as_markdown": true,
+  "include_heading": true,
+  "use_code_block": true
+}
+```
+
+## Output Example
+
+If Markdown and code blocks are enabled, the output will look like:
+
+````markdown
+Progetto: my-app - 20250710
+
+## src/index.js
+
+```javascript
+console.log("Hello world!");
+```
+
+## styles/main.css
+
+```css
+body {
+  background: #fff;
+}
+```
+````
+
+## Notes
+
+- Only files with allowed extensions are included by default.
+- Hidden folders and ignored files are shown but deselected by default.
+- All preview and configuration windows inherit the custom icon (`promptpack.ico`), if available.
+
+## License
+
+MIT License
+
+## Author
+
+Created by [Tobia Rigon](https://github.com/yourprofile), 2025.
