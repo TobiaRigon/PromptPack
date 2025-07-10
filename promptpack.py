@@ -38,20 +38,33 @@ def save_settings(settings):
     with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
         json.dump(settings, f, indent=4)
 
+def apply_icon(window):
+    try:
+        icon_path = "promptpack.ico"
+        if os.path.exists(icon_path):
+            window.iconbitmap(icon_path)
+    except Exception as e:
+        print(f"Icona non caricata: {e}")
+
 class PromptPackApp:
     def __init__(self, root):
         self.root = root
         root.title("PromptPack")
+        apply_icon(root)
 
         self.settings = load_settings()
 
         self.as_markdown = tk.BooleanVar(value=self.settings["as_markdown"])
         self.include_heading = tk.BooleanVar(value=self.settings["include_heading"])
         self.use_code_block = tk.BooleanVar(value=self.settings["use_code_block"])
+        self.enable_preview = tk.BooleanVar(value=False)
 
         self.start_folder = tk.StringVar()
         self.dest_folder = tk.StringVar()
         self.selected_files = set()
+
+        self.preview_window = None
+        self.preview_text = None
 
         self.build_gui()
 
@@ -63,16 +76,19 @@ class PromptPackApp:
         tk.Button(self.root, text="Seleziona file", command=self.select_files).grid(row=1, column=1, pady=5)
         tk.Button(self.root, text="Impostazioni", command=self.configure_settings).grid(row=1, column=2)
 
-        tk.Label(self.root, text="Cartella di destinazione").grid(row=2, column=0, sticky='w', padx=5, pady=5)
-        tk.Entry(self.root, textvariable=self.dest_folder, width=50).grid(row=2, column=1, padx=5)
-        tk.Button(self.root, text="Sfoglia", command=self.browse_dest).grid(row=2, column=2)
+        tk.Checkbutton(self.root, text="Live Preview", variable=self.enable_preview, command=self.toggle_preview_window).grid(row=2, column=1, sticky='w')
 
-        tk.Button(self.root, text="Genera", command=self.generate).grid(row=3, column=1, pady=10)
+        tk.Label(self.root, text="Cartella di destinazione").grid(row=3, column=0, sticky='w', padx=5, pady=5)
+        tk.Entry(self.root, textvariable=self.dest_folder, width=50).grid(row=3, column=1, padx=5)
+        tk.Button(self.root, text="Sfoglia", command=self.browse_dest).grid(row=3, column=2)
+
+        tk.Button(self.root, text="Genera", command=self.generate).grid(row=4, column=1, pady=10)
 
     def browse_start(self):
         folder = filedialog.askdirectory()
         if folder:
             self.start_folder.set(folder)
+            self.update_default_selected_files(Path(folder))
 
     def browse_dest(self):
         folder = filedialog.askdirectory()
@@ -82,6 +98,7 @@ class PromptPackApp:
     def configure_settings(self):
         win = Toplevel(self.root)
         win.title("Impostazioni")
+        apply_icon(win)
         win.geometry("500x400")
 
         def prompt_list(title, key):
@@ -110,6 +127,26 @@ class PromptPackApp:
     def is_valid(self, f):
         return f.suffix in self.settings["allowed_exts"] and f.name not in self.settings["excluded_files"]
 
+    def update_default_selected_files(self, folder_path):
+        all_files = folder_path.rglob("*")
+        self.selected_files = {f for f in all_files if f.is_file() and self.is_valid(f) and not any(excl in f.parts for excl in self.settings["excluded_dirs"])}
+
+    def toggle_preview_window(self):
+        if self.enable_preview.get():
+            preview_text = self.get_preview_text(self.selected_files)
+            if self.preview_window is None or not self.preview_window.winfo_exists():
+                self.preview_window = Toplevel(self.root)
+                self.preview_window.title("Anteprima")
+                apply_icon(self.preview_window)
+                self.preview_text = tk.Text(self.preview_window, wrap="word")
+                self.preview_text.pack(fill="both", expand=True)
+            self.preview_text.delete("1.0", "end")
+            self.preview_text.insert("1.0", preview_text)
+        else:
+            if self.preview_window and self.preview_window.winfo_exists():
+                self.preview_window.destroy()
+                self.preview_window = None
+
     def select_files(self):
         folder = self.start_folder.get()
         if not folder:
@@ -118,6 +155,7 @@ class PromptPackApp:
 
         selector = Toplevel(self.root)
         selector.title("Seleziona file da includere")
+        apply_icon(selector)
         selector.geometry("850x500")
 
         tree = ttk.Treeview(selector, columns=("fullpath", "type"))
@@ -143,6 +181,20 @@ class PromptPackApp:
 
         insert_items('', Path(folder))
 
+        self.selected_files = {Path(p) for p, var in checkbox_vars.items() if var.get()}
+
+        def update_preview_live():
+            if self.enable_preview.get():
+                preview_text = self.get_preview_text({Path(p) for p, var in checkbox_vars.items() if var.get()})
+                if self.preview_window is None or not self.preview_window.winfo_exists():
+                    self.preview_window = Toplevel(self.root)
+                    self.preview_window.title("Anteprima")
+                    apply_icon(self.preview_window)
+                    self.preview_text = tk.Text(self.preview_window, wrap="word")
+                    self.preview_text.pack(fill="both", expand=True)
+                self.preview_text.delete("1.0", "end")
+                self.preview_text.insert("1.0", preview_text)
+
         def toggle_checkbox(event):
             item = tree.identify_row(event.y)
             if not item:
@@ -156,14 +208,42 @@ class PromptPackApp:
                 var.set(not var.get())
                 new_label = f"[{'x' if var.get() else ' '}] {Path(path_str).name}"
                 tree.item(item, text=new_label)
+                update_preview_live()
 
         tree.bind("<Button-1>", toggle_checkbox)
 
         def confirm():
             self.selected_files = {Path(p) for p, var in checkbox_vars.items() if var.get()}
             selector.destroy()
+            if self.preview_window:
+                self.preview_window.destroy()
+                self.preview_window = None
 
         tk.Button(selector, text="Conferma selezione", command=confirm).pack(pady=5)
+
+    def get_preview_text(self, included_files):
+        return "\n".join(self.generate_preview_lines(self.start_folder.get(), included_files))
+
+    def generate_preview_lines(self, start_folder, included_files):
+        lines = []
+        project_name = Path(start_folder).name
+        date_str = datetime.now().strftime('%Y%m%d')
+        lines.append(f"Progetto: {project_name} - {date_str}\n")
+
+        for path in sorted(included_files):
+            try:
+                content = path.read_text(encoding='utf-8', errors='ignore')
+            except Exception:
+                continue
+            rel_path = path.relative_to(start_folder)
+            if self.include_heading.get():
+                lines.append(f"## {rel_path.as_posix()}\n")
+            if self.as_markdown.get() and self.use_code_block.get():
+                lang = LANG_MAP.get(path.suffix, '')
+                lines.append(f"```{lang}\n{content}\n```\n")
+            else:
+                lines.append(f"{content}\n")
+        return lines
 
     def generate(self):
         if not self.start_folder.get() or not self.dest_folder.get():
@@ -189,8 +269,7 @@ def generate_output(start_folder, dest_folder, included_files, as_markdown, incl
     lines = []
     project_name = Path(start_folder).name
     date_str = datetime.now().strftime('%Y%m%d')
-    header = f"Progetto: {project_name} - {date_str}\n\n"
-    lines.append(header)
+    lines.append(f"Progetto: {project_name} - {date_str}\n\n")
 
     for path in included_files:
         try:
@@ -202,11 +281,7 @@ def generate_output(start_folder, dest_folder, included_files, as_markdown, incl
             lines.append(f"## {rel_path.as_posix()}\n")
         if as_markdown and use_code_block:
             lang = LANG_MAP.get(path.suffix, '')
-            lines.append(f"
-
-{lang}\n{content}\n
-
-\n\n")
+            lines.append(f"```{lang}\n{content}\n```\n\n")
         else:
             lines.append(f"{content}\n\n")
 

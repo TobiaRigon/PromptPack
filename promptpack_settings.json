@@ -16,7 +16,7 @@
         ".env",
         "README.md"
     ],
-    "as_markdown": true,
-    "include_heading": true,
-    "use_code_block": true
+    "as_markdown": false,
+    "include_heading": false,
+    "use_code_block": false
 }
