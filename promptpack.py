@@ -46,6 +46,9 @@ def apply_icon(window):
     except Exception as e:
         print(f"Icon not loaded: {e}")
 
+def estimate_token_count(text):
+    return int(len(text) / 4)  # Stima approssimativa: 1 token ≈ 4 caratteri
+
 class PromptPackApp:
     def __init__(self, root):
         self.root = root
@@ -222,7 +225,11 @@ class PromptPackApp:
         tk.Button(selector, text="Confirm Selection", command=confirm).pack(pady=5)
 
     def get_preview_text(self, included_files):
-        return "\n".join(self.generate_preview_lines(self.start_folder.get(), included_files))
+        preview_lines = self.generate_preview_lines(self.start_folder.get(), included_files)
+        full_text = "\n".join(preview_lines)
+        token_count = estimate_token_count(full_text)
+        header = f"Token estimate: {token_count}\n{'='*40}\n"
+        return header + full_text
 
     def generate_preview_lines(self, start_folder, included_files):
         lines = []
