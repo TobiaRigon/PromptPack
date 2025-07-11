@@ -10,6 +10,25 @@ from .settings import load_settings, save_settings
 from .utils import apply_icon, estimate_token_count, LANG_MAP, generate_output
 
 
+class ListDialog(simpledialog.Dialog):
+    """Simple entry dialog that supports a custom window icon."""
+
+    def __init__(self, parent, title, initial_value=""):
+        self.initial_value = initial_value
+        super().__init__(parent, title)
+
+    def body(self, master):
+        apply_icon(self)
+        ttk.Label(master, text=f"{self.title} (comma separated):").pack(padx=5, pady=5)
+        self.entry = ttk.Entry(master, width=50)
+        self.entry.pack(padx=5, pady=5)
+        self.entry.insert(0, self.initial_value)
+        return self.entry
+
+    def apply(self):
+        self.result = self.entry.get()
+
+
 class PromptPackApp:
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -156,12 +175,8 @@ class PromptPackApp:
         win.geometry("500x400")
 
         def prompt_list(title, key):
-            result = simpledialog.askstring(
-                title,
-                f"{title} (comma separated):",
-                initialvalue=",".join(self.settings[key]),
-                parent=win,
-            )
+            dlg = ListDialog(win, title, initial_value=",".join(self.settings[key]))
+            result = dlg.result
             if result is not None:
                 self.settings[key] = [x.strip() for x in result.split(",") if x.strip()]
         ttk.Label(win, text="Default Selection").pack(pady=5)
