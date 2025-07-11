@@ -21,6 +21,7 @@ class PromptPackApp:
         self.as_markdown = tk.BooleanVar(value=self.settings["as_markdown"])
         self.include_heading = tk.BooleanVar(value=self.settings["include_heading"])
         self.use_code_block = tk.BooleanVar(value=self.settings["use_code_block"])
+        self.dark_mode = tk.BooleanVar(value=self.settings.get("dark_mode", False))
         self.enable_preview = tk.BooleanVar(value=False)
 
         self.start_folder = tk.StringVar()
@@ -31,8 +32,35 @@ class PromptPackApp:
         self.preview_text = None
 
         self.build_gui()
+        self.apply_theme()
+
+    def apply_theme(self):
+        style = ttk.Style()
+        if self.dark_mode.get():
+            style.theme_use("clam")
+            bg = "#2e2e2e"
+            fg = "#dcdcdc"
+            style.configure("TLabel", background=bg, foreground=fg)
+            style.configure("TButton", background=bg, foreground=fg)
+            style.configure("TCheckbutton", background=bg, foreground=fg)
+            style.configure("Treeview", background=bg, fieldbackground=bg, foreground=fg)
+            self.root.configure(background=bg)
+            if self.preview_window and self.preview_window.winfo_exists():
+                self.preview_window.configure(background=bg)
+                self.preview_text.configure(background=bg, foreground=fg, insertbackground=fg)
+        else:
+            style.theme_use("default")
+            style.configure("TLabel", background="", foreground="")
+            style.configure("TButton", background="", foreground="")
+            style.configure("TCheckbutton", background="", foreground="")
+            style.configure("Treeview", background="", fieldbackground="", foreground="")
+            self.root.configure(background="")
+            if self.preview_window and self.preview_window.winfo_exists():
+                self.preview_window.configure(background="")
+                self.preview_text.configure(background="white", foreground="black", insertbackground="black")
 
     def build_gui(self):
+        self.root.columnconfigure(1, weight=1)
         ttk.Label(self.root, text="Source Folder").grid(row=0, column=0, sticky='w', padx=5, pady=5)
         ttk.Entry(self.root, textvariable=self.start_folder, width=50).grid(row=0, column=1, padx=5)
         ttk.Button(self.root, text="Browse", command=self.browse_start).grid(row=0, column=2)
@@ -88,6 +116,7 @@ class PromptPackApp:
         ttk.Checkbutton(win, text="Markdown Format", variable=self.as_markdown).pack(anchor='w')
         ttk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(anchor='w')
         ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(anchor='w')
+        ttk.Checkbutton(win, text="Dark Mode", variable=self.dark_mode, command=self.apply_theme).pack(anchor='w')
 
         ttk.Button(
             win,
@@ -99,6 +128,7 @@ class PromptPackApp:
                         "as_markdown": self.as_markdown.get(),
                         "include_heading": self.include_heading.get(),
                         "use_code_block": self.use_code_block.get(),
+                        "dark_mode": self.dark_mode.get(),
                     }
                 ),
                 win.destroy(),
