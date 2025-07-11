@@ -10,7 +10,7 @@
 - Default filters for file extensions and folders (e.g., skip `.env`, `node_modules`, `.git`, etc.)
 - Saves and loads user settings to/from a JSON file
 - Option to format output as Markdown with code blocks, headings, and file separators
-- Switch between dark and light mode, saved in settings and applied to the GUI and browser preview
+- Switch between dark and light mode, con pulsanti e campi scuri quando il tema è impostato su "dark"
 
 ## Requirements
 

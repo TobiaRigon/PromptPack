@@ -72,8 +72,15 @@ class PromptPackApp:
                 "activeForeground": "#000000",
             }
 
+        self.root.configure(bg=palette["background"])
         self.root.tk_setPalette(**palette)
         style = ttk.Style(self.root)
+        style.theme_use("clam")
+        style.configure(
+            ".",
+            background=palette["background"],
+            foreground=palette["foreground"],
+        )
         style.configure(
             "TButton",
             background=palette["background"],
@@ -87,7 +94,9 @@ class PromptPackApp:
         style.configure(
             "TEntry",
             fieldbackground=palette["background"],
+            background=palette["background"],
             foreground=palette["foreground"],
+            insertcolor=palette["foreground"],
         )
         style.configure(
             "TLabel",
