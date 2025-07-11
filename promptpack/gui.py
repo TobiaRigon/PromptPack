@@ -71,7 +71,40 @@ class PromptPackApp:
                 "activeBackground": "#e0e0e0",
                 "activeForeground": "#000000",
             }
+
         self.root.tk_setPalette(**palette)
+        style = ttk.Style(self.root)
+        style.configure(
+            "TButton",
+            background=palette["background"],
+            foreground=palette["foreground"],
+        )
+        style.map(
+            "TButton",
+            background=[("active", palette["activeBackground"])],
+            foreground=[("active", palette["activeForeground"])],
+        )
+        style.configure(
+            "TEntry",
+            fieldbackground=palette["background"],
+            foreground=palette["foreground"],
+        )
+        style.configure(
+            "TLabel",
+            background=palette["background"],
+            foreground=palette["foreground"],
+        )
+        style.configure(
+            "TCheckbutton",
+            background=palette["background"],
+            foreground=palette["foreground"],
+        )
+        style.configure(
+            "TRadiobutton",
+            background=palette["background"],
+            foreground=palette["foreground"],
+        )
+
         if self.preview_window and self.preview_window.winfo_exists():
             self.preview_window.tk_setPalette(**palette)
             if self.preview_text:
