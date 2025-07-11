@@ -30,6 +30,16 @@
    python promptpack.py
    ```
 
+ 
+## Struttura del progetto
+
+Il codice sorgente è organizzato nel pacchetto `promptpack`:
+- `gui.py` contiene l'interfaccia grafica.
+- `settings.py` gestisce le impostazioni.
+- `utils.py` racchiude le funzioni di supporto.
+
+Il file `promptpack.py` avvia semplicemente l'applicazione.
+
 ## How to Use
 
 1. **Start Folder**: Click *Browse* to select the folder containing the files you want to include.
