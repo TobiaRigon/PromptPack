@@ -50,37 +50,81 @@ class PromptPackApp:
         self.preview_window = None
         self.preview_text = None
 
+        style = ttk.Style(self.root)
+        style.configure("Heading.TLabel", font=("TkDefaultFont", 15, "bold"))
+
         self.build_gui()
         self.apply_theme()
 
     def build_gui(self):
-        ttk.Label(self.root, text="Source Folder").grid(row=0, column=0, sticky='w', padx=5, pady=5)
-        ttk.Entry(self.root, textvariable=self.start_folder, width=50).grid(row=0, column=1, padx=5)
-        ttk.Button(self.root, text="Browse", command=self.browse_start).grid(row=0, column=2)
+        # Rende le 3 colonne espandibili per migliore distribuzione
+        for i in range(3):
+            self.root.grid_columnconfigure(i, weight=1)
 
-        ttk.Button(self.root, text="Select Files", command=self.select_files).grid(row=1, column=1, pady=5)
+        heading_opts = {
+            "style": "Heading.TLabel",
+            "anchor": "center"
+        }
 
-        ttk.Button(self.root, text="Settings", command=self.configure_settings, style="Gear.TButton").grid(row=5, column=2)
-        gear_button = ttk.Button(self.root, text="Settings", command=self.configure_settings, style="Gear.TButton")
-        gear_button.grid(row=5, column=2)
-        gear_button.bind("<Enter>", lambda e: gear_button.config(cursor="hand2"))
-        gear_button.bind("<Leave>", lambda e: gear_button.config(cursor=""))
+        # Source section
+        ttk.Label(self.root, text="Source", **heading_opts)\
+            .grid(row=0, column=1, sticky="ew", padx=10, pady=(20, 5))
 
+        ttk.Label(self.root, text="Source Folder")\
+            .grid(row=1, column=0, sticky="w", padx=10, pady=5)
 
+        ttk.Entry(self.root, textvariable=self.start_folder, width=50)\
+            .grid(row=1, column=1, padx=5, pady=5)
+
+        ttk.Button(self.root, text="Browse", command=self.browse_start)\
+            .grid(row=1, column=2, padx=5, pady=5)
+
+        ttk.Button(self.root, text="Select Files", command=self.select_files)\
+            .grid(row=2, column=1, pady=5)
+
+        # Preview section
+        ttk.Label(self.root, text="Preview", **heading_opts)\
+            .grid(row=3, column=1, sticky="ew", padx=10, pady=(20, 5))
+
+        ttk.Button(self.root, text="Preview in browser", command=self.preview_in_browser)\
+            .grid(row=4, column=1, pady=5)
 
         ttk.Checkbutton(
             self.root,
             text="Live Preview",
             variable=self.enable_preview,
             command=self.toggle_preview_window,
-        ).grid(row=2, column=2, sticky='w')
-        ttk.Button(self.root, text="Preview nel browser", command=self.preview_in_browser).grid(row=2, column=1)
+        ).grid(row=4, column=2, sticky="w", padx=5)
 
-        ttk.Label(self.root, text="Destination Folder").grid(row=3, column=0, sticky='w', padx=5, pady=5)
-        ttk.Entry(self.root, textvariable=self.dest_folder, width=50).grid(row=3, column=1, padx=5)
-        ttk.Button(self.root, text="Browse", command=self.browse_dest).grid(row=3, column=2)
+        # Output section
+        ttk.Label(self.root, text="Output", **heading_opts)\
+            .grid(row=5, column=1, sticky="ew", padx=10, pady=(20, 5))
 
-        ttk.Button(self.root, text="Generate", command=self.generate).grid(row=4, column=1, pady=10)
+        ttk.Label(self.root, text="Destination Folder")\
+            .grid(row=6, column=0, sticky="w", padx=10, pady=5)
+
+        ttk.Entry(self.root, textvariable=self.dest_folder, width=50)\
+            .grid(row=6, column=1, padx=5, pady=5)
+
+        ttk.Button(self.root, text="Browse", command=self.browse_dest)\
+            .grid(row=6, column=2, padx=5, pady=5)
+
+        ttk.Button(self.root, text="Generate", command=self.generate)\
+            .grid(row=7, column=1, pady=10)
+
+        # Settings gear button
+        gear_button = ttk.Button(
+            self.root,
+            text="⚙️ Settings",
+            command=self.configure_settings,
+            style="Gear.TButton"
+        )
+        gear_button.grid(row=8, column=2, sticky="e", pady=5, padx=5)
+        gear_button.bind("<Enter>", lambda e: gear_button.config(cursor="hand2"))
+        gear_button.bind("<Leave>", lambda e: gear_button.config(cursor=""))
+
+
+
 
     def apply_theme(self):
         if self.theme.get() == "dark":
@@ -102,6 +146,7 @@ class PromptPackApp:
         self.root.tk_setPalette(**palette)
         style = ttk.Style(self.root)
         style.theme_use("clam")
+        style.configure("Heading.TLabel", font=("TkDefaultFont", 15, "bold"))
         style.configure(
             ".",
             background=palette["background"],
@@ -172,27 +217,31 @@ class PromptPackApp:
         win = Toplevel(self.root)
         win.title("Settings")
         apply_icon(win)
-        win.geometry("500x400")
+        win.geometry("500x500")
+
+        style = ttk.Style(win)
+        style.configure("Heading.TLabel", font=("TkDefaultFont", 15, "bold"))
+
 
         def prompt_list(title, key):
             dlg = ListDialog(win, title, initial_value=",".join(self.settings[key]))
             result = dlg.result
             if result is not None:
                 self.settings[key] = [x.strip() for x in result.split(",") if x.strip()]
-        ttk.Label(win, text="Default Selection").pack(pady=5)
-        ttk.Button(win, text="Defailt Allowed Extensions", command=lambda: prompt_list("Allowed Extensions", "allowed_exts")).pack(pady=5)
-        ttk.Button(win, text="Defailt Excluded Directories", command=lambda: prompt_list("Excluded Directories", "excluded_dirs")).pack(pady=5)
-        ttk.Button(win, text="Defailt Excluded Files", command=lambda: prompt_list("Excluded Files", "excluded_files")).pack(pady=5)
+        ttk.Label(win, text="Default Selection", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Button(win, text="Defailt Allowed Extensions", command=lambda: prompt_list("Defailt Allowed Extensions", "allowed_exts")).pack(pady=5)
+        ttk.Button(win, text="Defailt Excluded Directories", command=lambda: prompt_list("Defailt Excluded Directories", "excluded_dirs")).pack(pady=5)
+        ttk.Button(win, text="Defailt Excluded Files", command=lambda: prompt_list("Defailt Excluded Files", "excluded_files")).pack(pady=5)
 
-        ttk.Label(win, text="Output Options").pack(pady=5)
-        ttk.Checkbutton(win, text="Markdown Format", variable=self.as_markdown).pack(anchor='w')
-        ttk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(anchor='w')
-        ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(anchor='w')
+        ttk.Label(win, text="Output Options", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Checkbutton(win, text="Markdown Format", variable=self.as_markdown).pack(pady=5)
+        ttk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(pady=5)
+        ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(pady=5)
 
 
-        ttk.Label(win, text="Tema").pack(pady=5)
-        ttk.Radiobutton(win, text="Chiaro", variable=self.theme, value="light", command=self.apply_theme).pack(anchor='w')
-        ttk.Radiobutton(win, text="Scuro", variable=self.theme, value="dark", command=self.apply_theme).pack(anchor='w')
+        ttk.Label(win, text="Theme", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Radiobutton(win, text="Chiaro", variable=self.theme, value="light", command=self.apply_theme).pack(pady=5)
+        ttk.Radiobutton(win, text="Scuro", variable=self.theme, value="dark", command=self.apply_theme).pack(pady=5)
 
         def save_and_close():
             new_settings = {
