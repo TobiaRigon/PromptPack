@@ -40,15 +40,22 @@ class PromptPackApp:
         ttk.Button(self.root, text="Browse", command=self.browse_start).grid(row=0, column=2)
 
         ttk.Button(self.root, text="Select Files", command=self.select_files).grid(row=1, column=1, pady=5)
-        ttk.Button(self.root, text="Settings", command=self.configure_settings).grid(row=1, column=2)
+
+        ttk.Button(self.root, text="Settings", command=self.configure_settings, style="Gear.TButton").grid(row=5, column=2)
+        gear_button = ttk.Button(self.root, text="Settings", command=self.configure_settings, style="Gear.TButton")
+        gear_button.grid(row=5, column=2)
+        gear_button.bind("<Enter>", lambda e: gear_button.config(cursor="hand2"))
+        gear_button.bind("<Leave>", lambda e: gear_button.config(cursor=""))
+
+
 
         ttk.Checkbutton(
             self.root,
             text="Live Preview",
             variable=self.enable_preview,
             command=self.toggle_preview_window,
-        ).grid(row=2, column=1, sticky='w')
-        ttk.Button(self.root, text="Preview nel browser", command=self.preview_in_browser).grid(row=2, column=2, sticky='w')
+        ).grid(row=2, column=2, sticky='w')
+        ttk.Button(self.root, text="Preview nel browser", command=self.preview_in_browser).grid(row=2, column=1)
 
         ttk.Label(self.root, text="Destination Folder").grid(row=3, column=0, sticky='w', padx=5, pady=5)
         ttk.Entry(self.root, textvariable=self.dest_folder, width=50).grid(row=3, column=1, padx=5)
@@ -104,15 +111,27 @@ class PromptPackApp:
             foreground=palette["foreground"],
         )
         style.configure(
-            "TCheckbutton",
+        "TCheckbutton",
+        background=palette["background"],
+        foreground=palette["foreground"],
+        )
+        style.configure(
+            "Gear.TButton",
+            relief="flat",
+            borderwidth=0,
             background=palette["background"],
             foreground=palette["foreground"],
+            padding=2,
         )
+        style.map("Gear.TButton", background=[], foreground=[])
+
+        style.map("TCheckbutton", background=[], foreground=[])
         style.configure(
             "TRadiobutton",
             background=palette["background"],
             foreground=palette["foreground"],
         )
+        style.map("TRadiobutton", background=[], foreground=[])
 
         if self.preview_window and self.preview_window.winfo_exists():
             self.preview_window.tk_setPalette(**palette)
@@ -145,16 +164,18 @@ class PromptPackApp:
             )
             if result is not None:
                 self.settings[key] = [x.strip() for x in result.split(",") if x.strip()]
+        ttk.Label(win, text="Default Selection").pack(pady=5)
+        ttk.Button(win, text="Defailt Allowed Extensions", command=lambda: prompt_list("Allowed Extensions", "allowed_exts")).pack(pady=5)
+        ttk.Button(win, text="Defailt Excluded Directories", command=lambda: prompt_list("Excluded Directories", "excluded_dirs")).pack(pady=5)
+        ttk.Button(win, text="Defailt Excluded Files", command=lambda: prompt_list("Excluded Files", "excluded_files")).pack(pady=5)
 
-        ttk.Button(win, text="Allowed Extensions", command=lambda: prompt_list("Allowed Extensions", "allowed_exts")).pack(pady=5)
-        ttk.Button(win, text="Excluded Directories", command=lambda: prompt_list("Excluded Directories", "excluded_dirs")).pack(pady=5)
-        ttk.Button(win, text="Excluded Files", command=lambda: prompt_list("Excluded Files", "excluded_files")).pack(pady=5)
-
+        ttk.Label(win, text="Output Options").pack(pady=5)
         ttk.Checkbutton(win, text="Markdown Format", variable=self.as_markdown).pack(anchor='w')
         ttk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(anchor='w')
         ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(anchor='w')
 
-        ttk.Label(win, text="Tema").pack(anchor='w')
+
+        ttk.Label(win, text="Tema").pack(pady=5)
         ttk.Radiobutton(win, text="Chiaro", variable=self.theme, value="light", command=self.apply_theme).pack(anchor='w')
         ttk.Radiobutton(win, text="Scuro", variable=self.theme, value="dark", command=self.apply_theme).pack(anchor='w')
 
