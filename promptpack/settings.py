@@ -11,6 +11,7 @@ DEFAULT_SETTINGS = {
     "as_markdown": True,
     "include_heading": True,
     "use_code_block": True,
+    "theme": "dark",
 }
 
 
@@ -18,7 +19,8 @@ def load_settings():
     if Path(SETTINGS_FILE).exists():
         try:
             with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                return {**DEFAULT_SETTINGS, **data}
         except Exception:
             return DEFAULT_SETTINGS.copy()
     return DEFAULT_SETTINGS.copy()

@@ -21,6 +21,7 @@ class PromptPackApp:
         self.as_markdown = tk.BooleanVar(value=self.settings["as_markdown"])
         self.include_heading = tk.BooleanVar(value=self.settings["include_heading"])
         self.use_code_block = tk.BooleanVar(value=self.settings["use_code_block"])
+        self.theme = tk.StringVar(value=self.settings.get("theme", "dark"))
         self.enable_preview = tk.BooleanVar(value=False)
 
         self.start_folder = tk.StringVar()
@@ -31,6 +32,7 @@ class PromptPackApp:
         self.preview_text = None
 
         self.build_gui()
+        self.apply_theme()
 
     def build_gui(self):
         ttk.Label(self.root, text="Source Folder").grid(row=0, column=0, sticky='w', padx=5, pady=5)
@@ -53,6 +55,27 @@ class PromptPackApp:
         ttk.Button(self.root, text="Browse", command=self.browse_dest).grid(row=3, column=2)
 
         ttk.Button(self.root, text="Generate", command=self.generate).grid(row=4, column=1, pady=10)
+
+    def apply_theme(self):
+        if self.theme.get() == "dark":
+            palette = {
+                "background": "#2d2d2d",
+                "foreground": "#dcdcdc",
+                "activeBackground": "#505050",
+                "activeForeground": "#ffffff",
+            }
+        else:
+            palette = {
+                "background": "#ffffff",
+                "foreground": "#000000",
+                "activeBackground": "#e0e0e0",
+                "activeForeground": "#000000",
+            }
+        self.root.tk_setPalette(**palette)
+        if self.preview_window and self.preview_window.winfo_exists():
+            self.preview_window.tk_setPalette(**palette)
+            if self.preview_text:
+                self.preview_text.configure(bg=palette["background"], fg=palette["foreground"])
 
     def browse_start(self):
         folder = filedialog.askdirectory()
@@ -89,21 +112,24 @@ class PromptPackApp:
         ttk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(anchor='w')
         ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(anchor='w')
 
-        ttk.Button(
-            win,
-            text="Save",
-            command=lambda: (
-                save_settings(
-                    {
-                        **self.settings,
-                        "as_markdown": self.as_markdown.get(),
-                        "include_heading": self.include_heading.get(),
-                        "use_code_block": self.use_code_block.get(),
-                    }
-                ),
-                win.destroy(),
-            ),
-        ).pack(pady=10)
+        ttk.Label(win, text="Tema").pack(anchor='w')
+        ttk.Radiobutton(win, text="Chiaro", variable=self.theme, value="light", command=self.apply_theme).pack(anchor='w')
+        ttk.Radiobutton(win, text="Scuro", variable=self.theme, value="dark", command=self.apply_theme).pack(anchor='w')
+
+        def save_and_close():
+            new_settings = {
+                **self.settings,
+                "as_markdown": self.as_markdown.get(),
+                "include_heading": self.include_heading.get(),
+                "use_code_block": self.use_code_block.get(),
+                "theme": self.theme.get(),
+            }
+            save_settings(new_settings)
+            self.settings = new_settings
+            self.apply_theme()
+            win.destroy()
+
+        ttk.Button(win, text="Save", command=save_and_close).pack(pady=10)
 
     def is_valid(self, f: Path) -> bool:
         return f.suffix in self.settings["allowed_exts"] and f.name not in self.settings["excluded_files"]
@@ -127,6 +153,7 @@ class PromptPackApp:
                 apply_icon(self.preview_window)
                 self.preview_text = tk.Text(self.preview_window, wrap="word")
                 self.preview_text.pack(fill="both", expand=True)
+                self.apply_theme()
             self.preview_text.delete("1.0", "end")
             self.preview_text.insert("1.0", preview_text)
         else:
@@ -141,7 +168,7 @@ class PromptPackApp:
         markdown_text = self.get_preview_text(self.selected_files)
         html_body = markdown.markdown(markdown_text, extensions=['fenced_code', 'codehilite'])
 
-        css = """
+        dark_css = """
         <style>
         body {
             background-color: #1e1e1e;
@@ -150,22 +177,50 @@ class PromptPackApp:
             padding: 20px;
         }
         pre, code {
-    background-color: #2d2d2d;
-    color: #dcdcdc;
-    font-family: monospace;
-    padding: 5px;
-    border-radius: 5px;
-    overflow-x: auto;
-    white-space: pre;
-    word-break: normal;
-    line-height: 1.4;
-}
+            background-color: #2d2d2d;
+            color: #dcdcdc;
+            font-family: monospace;
+            padding: 5px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre;
+            word-break: normal;
+            line-height: 1.4;
+        }
 
         h2 {
             color: #569cd6;
         }
         </style>
         """
+
+        light_css = """
+        <style>
+        body {
+            background-color: #ffffff;
+            color: #000000;
+            font-family: sans-serif;
+            padding: 20px;
+        }
+        pre, code {
+            background-color: #f5f5f5;
+            color: #000000;
+            font-family: monospace;
+            padding: 5px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre;
+            word-break: normal;
+            line-height: 1.4;
+        }
+
+        h2 {
+            color: #003366;
+        }
+        </style>
+        """
+
+        css = dark_css if self.theme.get() == "dark" else light_css
 
         html = f"<html><head>{css}</head><body>{html_body}</body></html>"
         with NamedTemporaryFile("w", delete=False, suffix=".html", encoding="utf-8") as tmp:
@@ -217,6 +272,7 @@ class PromptPackApp:
                     apply_icon(self.preview_window)
                     self.preview_text = tk.Text(self.preview_window, wrap="word")
                     self.preview_text.pack(fill="both", expand=True)
+                    self.apply_theme()
                 self.preview_text.delete("1.0", "end")
                 self.preview_text.insert("1.0", preview_text)
 
