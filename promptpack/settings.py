@@ -11,6 +11,7 @@ DEFAULT_SETTINGS = {
     "as_markdown": True,
     "include_heading": True,
     "use_code_block": True,
+    "dark_mode": False,
 }
 
 

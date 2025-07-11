@@ -10,6 +10,7 @@
 - Default filters for file extensions and folders (e.g., skip `.env`, `node_modules`, `.git`, etc.)
 - Saves and loads user settings to/from a JSON file
 - Option to format output as Markdown with code blocks, headings, and file separators
+- Optional dark mode for the GUI
 
 ## Requirements
 
@@ -49,6 +50,7 @@ Il file `promptpack.py` avvia semplicemente l'applicazione.
    - Markdown output
    - Include file headings
    - Use code blocks for each file
+   - Enable dark mode for the interface
 4. **Live Preview**: Enables a real-time preview of the final output file.
 5. **Destination Folder**: Choose where the final file will be saved.
 6. **Generate**: Creates a Markdown or plain text file containing the selected source files, formatted according to your settings.
@@ -64,7 +66,8 @@ User preferences are saved in a file named `promptpack_settings.json` in the sam
   "excluded_files": [".env", "README.md"],
   "as_markdown": true,
   "include_heading": true,
-  "use_code_block": true
+  "use_code_block": true,
+  "dark_mode": false
 }
 ```
 
