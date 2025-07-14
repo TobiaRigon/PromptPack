@@ -28,27 +28,42 @@ def estimate_token_count(text: str) -> int:
     return int(len(text) / 4)
 
 
-def generate_output(start_folder: str, dest_folder: str, included_files, as_markdown: bool, include_heading: bool, use_code_block: bool, max_file_size: int = 100000):
+def generate_output(
+    start_folder: str,
+    dest_folder: str,
+    included_files,
+    as_markdown: bool,
+    include_heading: bool,
+    use_code_block: bool,
+    max_tokens: int = 200000,
+):
     lines = []
     project_name = Path(start_folder).name
     date_str = datetime.now().strftime('%Y%m%d')
-    lines.append(f"Project: {project_name} - {date_str}\n\n")
+    header = f"Project: {project_name} - {date_str}\n\n"
+    lines.append(header)
+    token_count = estimate_token_count(header)
 
     for path in included_files:
         try:
             content = path.read_text(encoding='utf-8', errors='ignore')
         except Exception:
             continue
-        if len(content) > max_file_size:
-            continue
+        new_lines = []
         rel_path = path.relative_to(start_folder)
         if include_heading:
-            lines.append(f"## {rel_path.as_posix()}\n")
+            new_lines.append(f"## {rel_path.as_posix()}\n")
         if as_markdown and use_code_block:
             lang = LANG_MAP.get(path.suffix, '')
-            lines.append(f"```{lang}\n{content}\n```\n\n")
+            new_lines.append(f"```{lang}\n{content}\n```\n\n")
         else:
-            lines.append(f"{content}\n\n")
+            new_lines.append(f"{content}\n\n")
+        block = ''.join(new_lines)
+        block_tokens = estimate_token_count(block)
+        if token_count + block_tokens > max_tokens:
+            break
+        lines.append(block)
+        token_count += block_tokens
 
     output_file = Path(dest_folder) / f"{project_name}-{date_str}.{ 'md' if as_markdown else 'txt' }"
     output_file.write_text(''.join(lines), encoding='utf-8')

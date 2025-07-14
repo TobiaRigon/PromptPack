@@ -12,10 +12,8 @@ DEFAULT_SETTINGS = {
     "include_heading": True,
     "use_code_block": True,
     "theme": "dark",
-    # Numero massimo di file da includere in anteprima o export
-    "max_files": 200,
-    # Dimensione massima (in caratteri) di ciascun file
-    "max_file_size": 100_000,
+    # Numero massimo di token da elaborare in anteprima o export
+    "max_tokens": 200_000,
 }
 
 
