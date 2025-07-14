@@ -96,6 +96,8 @@ body {
 - Only files with allowed extensions are included by default.
 - Hidden folders and ignored files are shown but deselected by default.
 - All preview and configuration windows inherit the custom icon (`promptpack.ico`), if available.
+- La finestra "Select Files to Include" adotta uno sfondo scuro quando è attivo il tema dark.
+- Per evitare rallentamenti, viene applicato un limite di 200 file e i singoli file oltre 100·000 caratteri vengono ignorati.
 
 ## License
 

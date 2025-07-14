@@ -262,14 +262,22 @@ class PromptPackApp:
         return f.suffix in self.settings["allowed_exts"] and f.name not in self.settings["excluded_files"]
 
     def update_default_selected_files(self, folder_path: Path):
-        all_files = folder_path.rglob("*")
-        self.selected_files = {
-            f
-            for f in all_files
-            if f.is_file()
-            and self.is_valid(f)
-            and not any(excl in f.parts for excl in self.settings["excluded_dirs"])
-        }
+        max_files = self.settings.get("max_files", 200)
+        collected = []
+        for f in folder_path.rglob("*"):
+            if len(collected) >= max_files:
+                messagebox.showwarning(
+                    "Limite superato",
+                    f"Raggiunto il limite massimo di {max_files} file. Gli altri verranno ignorati.",
+                )
+                break
+            if (
+                f.is_file()
+                and self.is_valid(f)
+                and not any(excl in f.parts for excl in self.settings["excluded_dirs"])
+            ):
+                collected.append(f)
+        self.selected_files = set(collected)
 
     def toggle_preview_window(self):
         if self.enable_preview.get():
@@ -360,10 +368,33 @@ class PromptPackApp:
             messagebox.showerror("Error", "Please select the source folder first")
             return
 
+        max_files = self.settings.get("max_files", 200)
+        count = 0
+        for _ in Path(folder).rglob("*"):
+            if count > max_files:
+                break
+            if _.is_file() and self.is_valid(_):
+                count += 1
+        if count > max_files:
+            messagebox.showerror(
+                "Troppi file",
+                f"La cartella selezionata contiene più di {max_files} file validi. Seleziona una cartella più piccola o aumenta il limite.",
+            )
+            return
+
         selector = Toplevel(self.root)
         selector.title("Select Files to Include")
         apply_icon(selector)
         selector.geometry("850x500")
+        palette = {
+            "background": "#2d2d2d",
+            "foreground": "#dcdcdc",
+        } if self.theme.get() == "dark" else {
+            "background": "#ffffff",
+            "foreground": "#000000",
+        }
+        selector.configure(bg=palette["background"])
+        selector.tk_setPalette(**palette)
 
         tree = ttk.Treeview(selector, columns=("fullpath", "type"))
         tree.heading("#0", text="Name")
@@ -448,6 +479,13 @@ class PromptPackApp:
                 content = path.read_text(encoding='utf-8', errors='ignore')
             except Exception:
                 continue
+            max_size = self.settings.get("max_file_size", 100000)
+            if len(content) > max_size:
+                messagebox.showwarning(
+                    "File troppo grande",
+                    f"{path.name} supera il limite di {max_size} caratteri e verrà ignorato.",
+                )
+                continue
             rel_path = path.relative_to(start_folder)
             if self.include_heading.get():
                 lines.append(f"## {rel_path.as_posix()}\n")
@@ -473,6 +511,7 @@ class PromptPackApp:
                 self.as_markdown.get(),
                 self.include_heading.get(),
                 self.use_code_block.get(),
+                self.settings.get("max_file_size", 100000),
             )
             messagebox.showinfo("Done", f"File generated: {output_path}")
         except Exception as e:

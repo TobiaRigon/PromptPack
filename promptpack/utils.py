@@ -28,7 +28,7 @@ def estimate_token_count(text: str) -> int:
     return int(len(text) / 4)
 
 
-def generate_output(start_folder: str, dest_folder: str, included_files, as_markdown: bool, include_heading: bool, use_code_block: bool):
+def generate_output(start_folder: str, dest_folder: str, included_files, as_markdown: bool, include_heading: bool, use_code_block: bool, max_file_size: int = 100000):
     lines = []
     project_name = Path(start_folder).name
     date_str = datetime.now().strftime('%Y%m%d')
@@ -38,6 +38,8 @@ def generate_output(start_folder: str, dest_folder: str, included_files, as_mark
         try:
             content = path.read_text(encoding='utf-8', errors='ignore')
         except Exception:
+            continue
+        if len(content) > max_file_size:
             continue
         rel_path = path.relative_to(start_folder)
         if include_heading:
