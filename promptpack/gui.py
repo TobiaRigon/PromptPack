@@ -209,6 +209,12 @@ class PromptPackApp:
             foreground=palette["foreground"],
         )
         style.map("TRadiobutton", background=[], foreground=[])
+        style.configure(
+            "TMenubutton",
+            background=palette["background"],
+            foreground=palette["foreground"],
+        )
+        style.map("TMenubutton", background=[], foreground=[])
 
         if self.preview_window and self.preview_window.winfo_exists():
             self.preview_window.tk_setPalette(**palette)
@@ -224,9 +230,13 @@ class PromptPackApp:
     def handle_drop(self, event):
         if not event.data:
             return
-        path = event.data
-        if path.startswith('{') and path.endswith('}'):
+        path = event.data.strip()
+        if path.startswith("{") and path.endswith("}"):
             path = path[1:-1]
+        if " " in path:
+            path = path.split()[0]
+        if path.startswith("file://"):
+            path = path[7:]
         if Path(path).is_dir():
             self.start_folder.set(path)
             self.update_default_selected_files(Path(path))
@@ -281,9 +291,17 @@ class PromptPackApp:
                 break
         self.max_tokens_choice = tk.StringVar(value=preset_label)
         self.custom_max_tokens = tk.IntVar(value=current_tokens)
-        token_menu = ttk.OptionMenu(win, self.max_tokens_choice, preset_label, *preset_names, command=lambda *_: toggle_entry())
-        token_menu.pack(pady=5)
-        token_entry = ttk.Entry(win, textvariable=self.custom_max_tokens)
+        token_frame = ttk.Frame(win)
+        token_frame.pack(pady=5)
+        token_menu = ttk.OptionMenu(token_frame, self.max_tokens_choice, preset_label, *preset_names, command=lambda *_: toggle_entry())
+        token_menu.pack()
+        # remove hover highlight from dropdown menu
+        menu_widget = token_menu["menu"]
+        bg = "#2d2d2d" if self.theme.get() == "dark" else "#ffffff"
+        fg = "#dcdcdc" if self.theme.get() == "dark" else "#000000"
+        menu_widget.configure(bg=bg, fg=fg, activebackground=bg, activeforeground=fg)
+
+        token_entry = ttk.Entry(token_frame, textvariable=self.custom_max_tokens)
         if self.max_tokens_choice.get() == "Custom":
             token_entry.pack(pady=5)
 
