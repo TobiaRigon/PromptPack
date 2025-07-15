@@ -42,6 +42,7 @@ class PromptPackApp:
         self.include_heading = tk.BooleanVar(value=self.settings["include_heading"])
         self.use_code_block = tk.BooleanVar(value=self.settings["use_code_block"])
         self.theme = tk.StringVar(value=self.settings.get("theme", "dark"))
+        self.export_json = tk.BooleanVar(value=self.settings.get("export_json", False))
         self.enable_preview = tk.BooleanVar(value=False)
 
         self.start_folder = tk.StringVar()
@@ -238,6 +239,7 @@ class PromptPackApp:
         ttk.Checkbutton(win, text="Markdown Format", variable=self.as_markdown).pack(pady=5)
         ttk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(pady=5)
         ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(pady=5)
+        ttk.Checkbutton(win, text="Export JSON", variable=self.export_json).pack(pady=5)
 
 
         ttk.Label(win, text="Theme", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
@@ -250,6 +252,7 @@ class PromptPackApp:
                 "as_markdown": self.as_markdown.get(),
                 "include_heading": self.include_heading.get(),
                 "use_code_block": self.use_code_block.get(),
+                "export_json": self.export_json.get(),
                 "theme": self.theme.get(),
             }
             save_settings(new_settings)
@@ -457,7 +460,9 @@ class PromptPackApp:
         preview_lines = self.generate_preview_lines(self.start_folder.get(), included_files)
         full_text = "\n".join(preview_lines)
         token_count = estimate_token_count(full_text)
-        header = f"Token estimate: {token_count}\n{'='*40}\n"
+        max_tokens = self.settings.get("max_tokens", 200000)
+        remaining = max_tokens - token_count
+        header = f"Token estimate: {token_count} | Remaining: {remaining}\n{'='*40}\n"
         return header + full_text
 
     def generate_preview_lines(self, start_folder, included_files):
@@ -503,7 +508,7 @@ class PromptPackApp:
             messagebox.showerror("Error", "No files selected")
             return
         try:
-            output_path = generate_output(
+            output_files = generate_output(
                 self.start_folder.get(),
                 self.dest_folder.get(),
                 list(self.selected_files),
@@ -511,7 +516,9 @@ class PromptPackApp:
                 self.include_heading.get(),
                 self.use_code_block.get(),
                 self.settings.get("max_tokens", 200000),
+                self.export_json.get(),
             )
-            messagebox.showinfo("Done", f"File generated: {output_path}")
+            msg = "\n".join(str(p) for p in output_files)
+            messagebox.showinfo("Done", f"File generated:\n{msg}")
         except Exception as e:
             messagebox.showerror("Error", str(e))

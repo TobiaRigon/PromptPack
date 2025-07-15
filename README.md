@@ -11,6 +11,8 @@
 - Saves and loads user settings to/from a JSON file
 - Option to format output as Markdown with code blocks, headings, and file separators
 - Switch between dark and light mode, con pulsanti e campi scuri quando il tema è impostato su "dark"
+- Supports chunked export quando il totale supera il limite di token impostato
+- Possibilità di esportare anche in JSON strutturato
 
 ## Requirements
 
@@ -50,6 +52,7 @@ Il file `promptpack.py` avvia semplicemente l'applicazione.
    - Markdown output
    - Include file headings
    - Use code blocks for each file
+   - Export JSON
 4. **Live Preview**: Enables a real-time preview of the final output file.
 5. **Destination Folder**: Choose where the final file will be saved.
 6. **Generate**: Creates a Markdown or plain text file containing the selected source files, formatted according to your settings.
@@ -65,7 +68,8 @@ User preferences are saved in a file named `promptpack_settings.json` in the sam
   "excluded_files": [".env", "README.md"],
   "as_markdown": true,
   "include_heading": true,
-  "use_code_block": true
+  "use_code_block": true,
+  "export_json": false
 }
 ```
 
@@ -97,7 +101,7 @@ body {
 - Hidden folders and ignored files are shown but deselected by default.
 - All preview and configuration windows inherit the custom icon (`promptpack.ico`), if available.
 - La finestra "Select Files to Include" adotta uno sfondo scuro quando è attivo il tema dark.
-- Per evitare rallentamenti, l'anteprima e l'esportazione interrompono la raccolta dei contenuti al raggiungimento di 200 000 token.
+- Per evitare rallentamenti, l'anteprima interrompe la raccolta dei contenuti al raggiungimento di 200 000 token. L'esportazione divide automaticamente l'output in più file quando viene superata questa soglia.
 
 ## License
 

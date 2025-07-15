@@ -14,6 +14,7 @@ DEFAULT_SETTINGS = {
     "theme": "dark",
     # Numero massimo di token da elaborare in anteprima o export
     "max_tokens": 200_000,
+    "export_json": False,
 }
 
 
