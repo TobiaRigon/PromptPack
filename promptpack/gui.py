@@ -38,7 +38,7 @@ class PromptPackApp:
 
         self.settings = load_settings()
 
-        self.as_markdown = tk.BooleanVar(value=self.settings["as_markdown"])
+        self.export_format = tk.StringVar(value=self.settings.get("export_format", "md"))
         self.include_heading = tk.BooleanVar(value=self.settings["include_heading"])
         self.use_code_block = tk.BooleanVar(value=self.settings["use_code_block"])
         self.theme = tk.StringVar(value=self.settings.get("theme", "dark"))
@@ -235,7 +235,10 @@ class PromptPackApp:
         ttk.Button(win, text="Defailt Excluded Files", command=lambda: prompt_list("Defailt Excluded Files", "excluded_files")).pack(pady=5)
 
         ttk.Label(win, text="Output Options", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Checkbutton(win, text="Markdown Format", variable=self.as_markdown).pack(pady=5)
+        ttk.Label(win, text="Formato esportazione:").pack(pady=(5, 0))
+        ttk.Radiobutton(win, text="TXT", variable=self.export_format, value="txt").pack(pady=2)
+        ttk.Radiobutton(win, text="Markdown", variable=self.export_format, value="md").pack(pady=2)
+        ttk.Radiobutton(win, text="JSON", variable=self.export_format, value="json").pack(pady=2)
         ttk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(pady=5)
         ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(pady=5)
 
@@ -247,7 +250,7 @@ class PromptPackApp:
         def save_and_close():
             new_settings = {
                 **self.settings,
-                "as_markdown": self.as_markdown.get(),
+                "export_format": self.export_format.get(),
                 "include_heading": self.include_heading.get(),
                 "use_code_block": self.use_code_block.get(),
                 "theme": self.theme.get(),
@@ -478,7 +481,7 @@ class PromptPackApp:
             rel_path = path.relative_to(start_folder)
             if self.include_heading.get():
                 chunk.append(f"## {rel_path.as_posix()}\n")
-            if self.as_markdown.get() and self.use_code_block.get():
+            if self.export_format.get() == "md" and self.use_code_block.get():
                 lang = LANG_MAP.get(path.suffix, '')
                 chunk.append(f"```{lang}\n{content}\n```\n")
             else:
@@ -507,7 +510,7 @@ class PromptPackApp:
                 self.start_folder.get(),
                 self.dest_folder.get(),
                 list(self.selected_files),
-                self.as_markdown.get(),
+                self.export_format.get(),
                 self.include_heading.get(),
                 self.use_code_block.get(),
                 self.settings.get("max_tokens", 200000),

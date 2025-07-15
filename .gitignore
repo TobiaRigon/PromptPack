@@ -1,2 +1,4 @@
 /releases
 releases/*
+__pycache__/
+promptpack/__pycache__/

@@ -16,7 +16,7 @@
         ".env",
         "README.md"
     ],
-    "as_markdown": true,
+    "export_format": "md",
     "include_heading": true,
     "use_code_block": true,
     "theme": "dark"

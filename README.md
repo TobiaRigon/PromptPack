@@ -1,6 +1,6 @@
 # PromptPack
 
-**PromptPack** is a desktop application written in Python with Tkinter that allows you to quickly generate a Markdown or plain text summary of selected source files from a project folder. It's designed for developers and technical writers who need to prepare code documentation, share source samples, or create prompt material for LLMs.
+**PromptPack** is a desktop application written in Python with Tkinter that allows you to quickly generate summaries of selected source files in Markdown, plain text or JSON format. It's designed for developers and technical writers who need to prepare code documentation, share source samples, or create prompt material for LLMs.
 
 ## Features
 
@@ -9,7 +9,7 @@
 - Live preview window to see the generated output before exporting
 - Default filters for file extensions and folders (e.g., skip `.env`, `node_modules`, `.git`, etc.)
 - Saves and loads user settings to/from a JSON file
-- Option to format output as Markdown with code blocks, headings, and file separators
+- Choose export format (TXT, Markdown or JSON) and optionally include code blocks and headings
 - Switch between dark and light mode, con pulsanti e campi scuri quando il tema è impostato su "dark"
 
 ## Requirements
@@ -47,12 +47,12 @@ Il file `promptpack.py` avvia semplicemente l'applicazione.
 2. **Select Files**: Opens an expandable tree of all folders and files. You can include/exclude each item via checkboxes.
    - Default selections are based on the current settings.
 3. **Settings**: Define default allowed extensions, excluded folders and files. Also choose:
-   - Markdown output
+   - Export format (txt, md, json)
    - Include file headings
-   - Use code blocks for each file
+   - Use code blocks for each file (Markdown only)
 4. **Live Preview**: Enables a real-time preview of the final output file.
 5. **Destination Folder**: Choose where the final file will be saved.
-6. **Generate**: Creates a Markdown or plain text file containing the selected source files, formatted according to your settings.
+6. **Generate**: Creates an output file in the chosen format containing the selected source files, formatted according to your settings.
 
 ## Settings
 
@@ -63,7 +63,7 @@ User preferences are saved in a file named `promptpack_settings.json` in the sam
   "allowed_exts": [".php", ".js", ".ts", ".html", ".css", ".py"],
   "excluded_dirs": ["vendor", ".git", "node_modules"],
   "excluded_files": [".env", "README.md"],
-  "as_markdown": true,
+  "export_format": "md",
   "include_heading": true,
   "use_code_block": true
 }
