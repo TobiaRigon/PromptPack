@@ -9,6 +9,8 @@ DEFAULT_SETTINGS = {
     "excluded_dirs": ["vendor", ".git", "node_modules"],
     "excluded_files": [".env", "README.md"],
     "export_format": "md",  # opzioni: txt, md, json
+    # Se True, esporta solo l'albero dei file senza i contenuti
+    "tree_only": False,
     "include_heading": True,
     "use_code_block": True,
     "theme": "dark",
@@ -25,6 +27,8 @@ def load_settings():
                 if "export_format" not in data:
                     # migrazione da versione precedente con as_markdown booleano
                     data["export_format"] = "md" if data.get("as_markdown", True) else "txt"
+                if "tree_only" not in data:
+                    data["tree_only"] = DEFAULT_SETTINGS["tree_only"]
                 return {**DEFAULT_SETTINGS, **data}
         except Exception:
             return DEFAULT_SETTINGS.copy()

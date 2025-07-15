@@ -39,6 +39,7 @@ class PromptPackApp:
         self.settings = load_settings()
 
         self.export_format = tk.StringVar(value=self.settings.get("export_format", "md"))
+        self.tree_only = tk.BooleanVar(value=self.settings.get("tree_only", False))
         self.include_heading = tk.BooleanVar(value=self.settings["include_heading"])
         self.use_code_block = tk.BooleanVar(value=self.settings["use_code_block"])
         self.theme = tk.StringVar(value=self.settings.get("theme", "dark"))
@@ -241,6 +242,7 @@ class PromptPackApp:
         ttk.Radiobutton(win, text="JSON", variable=self.export_format, value="json").pack(pady=2)
         ttk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(pady=5)
         ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(pady=5)
+        ttk.Checkbutton(win, text="Solo albero file", variable=self.tree_only).pack(pady=5)
 
 
         ttk.Label(win, text="Theme", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
@@ -251,6 +253,7 @@ class PromptPackApp:
             new_settings = {
                 **self.settings,
                 "export_format": self.export_format.get(),
+                "tree_only": self.tree_only.get(),
                 "include_heading": self.include_heading.get(),
                 "use_code_block": self.use_code_block.get(),
                 "theme": self.theme.get(),
@@ -473,12 +476,20 @@ class PromptPackApp:
         max_tokens = self.settings.get("max_tokens", 200000)
 
         for path in sorted(included_files):
+            rel_path = path.relative_to(start_folder)
+            if self.tree_only.get():
+                line = f"{rel_path.as_posix()}\n"
+                tokens = estimate_token_count(line)
+                if token_count + tokens > max_tokens:
+                    break
+                lines.append(line)
+                token_count += tokens
+                continue
             try:
                 content = path.read_text(encoding='utf-8', errors='ignore')
             except Exception:
                 continue
             chunk = []
-            rel_path = path.relative_to(start_folder)
             if self.include_heading.get():
                 chunk.append(f"## {rel_path.as_posix()}\n")
             if self.export_format.get() == "md" and self.use_code_block.get():
@@ -511,6 +522,7 @@ class PromptPackApp:
                 self.dest_folder.get(),
                 list(self.selected_files),
                 self.export_format.get(),
+                self.tree_only.get(),
                 self.include_heading.get(),
                 self.use_code_block.get(),
                 self.settings.get("max_tokens", 200000),

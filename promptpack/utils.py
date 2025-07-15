@@ -34,6 +34,7 @@ def generate_output(
     dest_folder: str,
     included_files,
     export_format: str,
+    tree_only: bool,
     include_heading: bool,
     use_code_block: bool,
     max_tokens: int = 200000,
@@ -51,12 +52,28 @@ def generate_output(
         token_count = estimate_token_count(header)
 
     for path in included_files:
+        rel_path = path.relative_to(start_folder)
+        if tree_only:
+            if export_format == "json":
+                block_tokens = estimate_token_count(rel_path.as_posix())
+                if token_count + block_tokens > max_tokens:
+                    break
+                data["files"].append({"path": rel_path.as_posix()})
+                token_count += block_tokens
+            else:
+                line = f"{rel_path.as_posix()}\n"
+                block_tokens = estimate_token_count(line)
+                if token_count + block_tokens > max_tokens:
+                    break
+                lines.append(line)
+                token_count += block_tokens
+            continue
+
         try:
             content = path.read_text(encoding='utf-8', errors='ignore')
         except Exception:
             continue
 
-        rel_path = path.relative_to(start_folder)
         if export_format == "json":
             block_tokens = estimate_token_count(content)
             if token_count + block_tokens > max_tokens:

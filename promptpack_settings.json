@@ -17,6 +17,7 @@
         "README.md"
     ],
     "export_format": "md",
+    "tree_only": false,
     "include_heading": true,
     "use_code_block": true,
     "theme": "dark"

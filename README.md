@@ -10,6 +10,7 @@
 - Default filters for file extensions and folders (e.g., skip `.env`, `node_modules`, `.git`, etc.)
 - Saves and loads user settings to/from a JSON file
 - Choose export format (TXT, Markdown or JSON) and optionally include code blocks and headings
+- Optionally export only the file tree without contents
 - Switch between dark and light mode, con pulsanti e campi scuri quando il tema è impostato su "dark"
 
 ## Requirements
@@ -50,6 +51,7 @@ Il file `promptpack.py` avvia semplicemente l'applicazione.
    - Export format (txt, md, json)
    - Include file headings
    - Use code blocks for each file (Markdown only)
+   - Export only the file tree
 4. **Live Preview**: Enables a real-time preview of the final output file.
 5. **Destination Folder**: Choose where the final file will be saved.
 6. **Generate**: Creates an output file in the chosen format containing the selected source files, formatted according to your settings.
@@ -64,6 +66,7 @@ User preferences are saved in a file named `promptpack_settings.json` in the sam
   "excluded_dirs": ["vendor", ".git", "node_modules"],
   "excluded_files": [".env", "README.md"],
   "export_format": "md",
+  "tree_only": false,
   "include_heading": true,
   "use_code_block": true
 }
