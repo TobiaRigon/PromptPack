@@ -15,11 +15,12 @@ class ListDialog(simpledialog.Dialog):
 
     def __init__(self, parent, title, initial_value=""):
         self.initial_value = initial_value
+        self.dialog_title = title
         super().__init__(parent, title)
 
     def body(self, master):
         apply_icon(self)
-        ttk.Label(master, text=f"{self.title} (comma separated):").pack(padx=5, pady=5)
+        ttk.Label(master, text=f"{self.dialog_title} (comma separated):").pack(padx=5, pady=5)
         self.entry = ttk.Entry(master, width=50)
         self.entry.pack(padx=5, pady=5)
         self.entry.insert(0, self.initial_value)
