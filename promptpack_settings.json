@@ -21,5 +21,7 @@
     "include_heading": true,
     "use_code_block": true,
     "theme": "dark",
-    "max_tokens": 200000
+    "max_tokens": 200000,
+    "last_start_folder": "",
+    "last_selected_files": []
 }

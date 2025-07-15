@@ -19,6 +19,7 @@
 - Copy the preview to the clipboard with one click
 - Select or deselect all files at once when choosing what to include
 - Remaining token counter shows usage versus limit
+- Remembers last source folder and file selection
 
 ## Requirements
 
@@ -77,7 +78,9 @@ User preferences are saved in a file named `promptpack_settings.json` in the sam
  "tree_only": false,
  "include_heading": true,
   "use_code_block": true,
-  "max_tokens": 200000
+  "max_tokens": 200000,
+  "last_start_folder": "",
+  "last_selected_files": []
 }
 ```
 
@@ -114,6 +117,7 @@ body {
 - To avoid slowdowns, preview stops gathering content after the selected token limit. Export files are split when they exceed this limit.
 - A clipboard button lets you quickly copy the preview text.
 - A counter displays remaining tokens while selecting files.
+- Last source folder and selections are remembered between runs.
 
 ## License
 

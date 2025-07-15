@@ -16,6 +16,9 @@ DEFAULT_SETTINGS = {
     "theme": "dark",
     # Maximum tokens per preview or export file
     "max_tokens": 200_000,
+    # Remember last source folder and selected files
+    "last_start_folder": "",
+    "last_selected_files": [],
 }
 
 
@@ -29,6 +32,10 @@ def load_settings():
                     data["export_format"] = "md" if data.get("as_markdown", True) else "txt"
                 if "tree_only" not in data:
                     data["tree_only"] = DEFAULT_SETTINGS["tree_only"]
+                if "last_start_folder" not in data:
+                    data["last_start_folder"] = DEFAULT_SETTINGS["last_start_folder"]
+                if "last_selected_files" not in data:
+                    data["last_selected_files"] = DEFAULT_SETTINGS["last_selected_files"]
                 return {**DEFAULT_SETTINGS, **data}
         except Exception:
             return DEFAULT_SETTINGS.copy()

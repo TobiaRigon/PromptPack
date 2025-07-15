@@ -47,7 +47,7 @@ class PromptPackApp:
         self.theme = tk.StringVar(value=self.settings.get("theme", "dark"))
         self.enable_preview = tk.BooleanVar(value=False)
 
-        self.start_folder = tk.StringVar()
+        self.start_folder = tk.StringVar(value=self.settings.get("last_start_folder", ""))
         self.dest_folder = tk.StringVar()
         self.selected_files = set()
         self.gitignore_spec = None
@@ -59,6 +59,18 @@ class PromptPackApp:
         style.configure("Heading.TLabel", font=("TkDefaultFont", 15, "bold"))
 
         self.build_gui()
+
+        folder = self.start_folder.get()
+        if folder:
+            self.update_default_selected_files(Path(folder))
+            saved = {
+                Path(folder) / Path(p)
+                for p in self.settings.get("last_selected_files", [])
+            }
+            saved_existing = {p for p in saved if p.exists()}
+            if saved_existing:
+                self.selected_files = saved_existing
+
         self.apply_theme()
 
     def build_gui(self):
@@ -221,6 +233,9 @@ class PromptPackApp:
         if folder:
             self.start_folder.set(folder)
             self.update_default_selected_files(Path(folder))
+            self.settings["last_start_folder"] = folder
+            self.settings["last_selected_files"] = []
+            save_settings(self.settings)
 
 
     def browse_dest(self):
@@ -489,6 +504,11 @@ class PromptPackApp:
         checkbox_items = {}
         all_state = tk.BooleanVar(value=False)
 
+        def update_token_label():
+            tokens = self.compute_token_count({Path(p) for p, var in checkbox_vars.items() if var.get()})
+            max_tokens = self.settings.get("max_tokens", 200000)
+            token_label.config(text=f"Tokens: {tokens} / {max_tokens}")
+
         def insert_items(parent, path: Path):
             for p in sorted(path.iterdir()):
                 if p.is_dir():
@@ -503,18 +523,14 @@ class PromptPackApp:
                             and self.gitignore_spec.match_file(str(p.relative_to(folder)))
                         )
                     )
-                    var = tk.BooleanVar(value=default_checked)
+                    checked = p in self.selected_files or default_checked
+                    var = tk.BooleanVar(value=checked)
                     item = tree.insert(parent, 'end', text=f"[{'x' if var.get() else ' '}] {p.name}", values=(str(p), "file"))
                     checkbox_vars[str(p)] = var
                     checkbox_items[str(p)] = item
 
         insert_items('', Path(folder))
         update_token_label()
-
-        def update_token_label():
-            tokens = self.compute_token_count({Path(p) for p, var in checkbox_vars.items() if var.get()})
-            max_tokens = self.settings.get("max_tokens", 200000)
-            token_label.config(text=f"Tokens: {tokens} / {max_tokens}")
 
         def update_preview_live():
             if self.enable_preview.get():
@@ -560,14 +576,22 @@ class PromptPackApp:
 
         ttk.Button(selector, text="Select/Deselect All", command=toggle_all).pack(pady=5)
 
+        def confirm_selection():
+            self.selected_files = {Path(p) for p, var in checkbox_vars.items() if var.get()}
+            self.settings["last_start_folder"] = self.start_folder.get()
+            self.settings["last_selected_files"] = [
+                str(Path(p).relative_to(self.start_folder.get()))
+                for p, var in checkbox_vars.items() if var.get()
+            ]
+            save_settings(self.settings)
+            selector.destroy()
+            if self.preview_window and self.preview_window.winfo_exists():
+                self.preview_window.destroy()
+
         ttk.Button(
             selector,
             text="Confirm Selection",
-            command=lambda: (
-                self.selected_files.update({Path(p) for p, var in checkbox_vars.items() if var.get()}),
-                selector.destroy(),
-                self.preview_window and self.preview_window.destroy(),
-            ),
+            command=confirm_selection,
         ).pack(pady=5)
 
     def compute_token_count(self, included_files):
