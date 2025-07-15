@@ -265,6 +265,34 @@ class PromptPackApp:
         ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(pady=5)
         ttk.Checkbutton(win, text="Tree only", variable=self.tree_only).pack(pady=5)
 
+        ttk.Label(win, text="Token limit", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        preset_limits = {
+            "ChatGPT (16k)": 16000,
+            "Gemini (32k)": 32000,
+            "ChatGPT-4 Turbo (128k)": 128000,
+            "Claude 3 (200k)": 200000,
+        }
+        preset_names = list(preset_limits.keys()) + ["Custom"]
+        current_tokens = self.settings.get("max_tokens", 200000)
+        preset_label = "Custom"
+        for name, val in preset_limits.items():
+            if val == current_tokens:
+                preset_label = name
+                break
+        self.max_tokens_choice = tk.StringVar(value=preset_label)
+        self.custom_max_tokens = tk.IntVar(value=current_tokens)
+        token_menu = ttk.OptionMenu(win, self.max_tokens_choice, preset_label, *preset_names, command=lambda *_: toggle_entry())
+        token_menu.pack(pady=5)
+        token_entry = ttk.Entry(win, textvariable=self.custom_max_tokens)
+        if self.max_tokens_choice.get() == "Custom":
+            token_entry.pack(pady=5)
+
+        def toggle_entry(*_):
+            if self.max_tokens_choice.get() == "Custom":
+                token_entry.pack(pady=5)
+            else:
+                token_entry.pack_forget()
+
 
         ttk.Label(win, text="Theme", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
         ttk.Radiobutton(win, text="Light", variable=self.theme, value="light", command=self.apply_theme).pack(pady=5)
@@ -278,6 +306,7 @@ class PromptPackApp:
                 "include_heading": self.include_heading.get(),
                 "use_code_block": self.use_code_block.get(),
                 "theme": self.theme.get(),
+                "max_tokens": preset_limits.get(self.max_tokens_choice.get(), self.custom_max_tokens.get()),
             }
             save_settings(new_settings)
             self.settings = new_settings

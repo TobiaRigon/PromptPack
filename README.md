@@ -13,7 +13,8 @@
 - Optionally export only the file tree without contents
 - Switch between dark and light mode, with buttons and fields adopting dark colors when the theme is set to "dark"
 - Drag and drop a folder onto the window to quickly set the source folder
-- Exports larger than 200,000 tokens are automatically split into multiple files
+- Exports larger than the chosen token limit are automatically split into multiple files
+- Select a token limit preset (ChatGPT, Gemini, Claude) or set a custom value
 
 ## Requirements
 
@@ -54,6 +55,7 @@ The file `promptpack.py` simply launches the application.
    - Include file headings
    - Use code blocks for each file (Markdown only)
    - Export only the file tree
+   - Token limit for preview and export
 4. **Live Preview**: Enables a real-time preview of the final output file.
 5. **Destination Folder**: Choose where the final file will be saved.
 6. **Generate**: Creates an output file in the chosen format containing the selected source files, formatted according to your settings.
@@ -66,11 +68,12 @@ User preferences are saved in a file named `promptpack_settings.json` in the sam
 {
   "allowed_exts": [".php", ".js", ".ts", ".html", ".css", ".py"],
   "excluded_dirs": ["vendor", ".git", "node_modules"],
-  "excluded_files": [".env", "README.md"],
-  "export_format": "md",
-  "tree_only": false,
-  "include_heading": true,
-  "use_code_block": true
+ "excluded_files": [".env", "README.md"],
+ "export_format": "md",
+ "tree_only": false,
+ "include_heading": true,
+  "use_code_block": true,
+  "max_tokens": 200000
 }
 ```
 
@@ -102,7 +105,7 @@ body {
 - Hidden folders and ignored files are shown but deselected by default.
 - All preview and configuration windows inherit the custom icon (`promptpack.ico`), if available.
 - The "Select Files to Include" window uses a dark background when the dark theme is enabled.
-- To avoid slowdowns, preview stops gathering content after 200 000 tokens. Export automatically splits files every 200 000 tokens.
+- To avoid slowdowns, preview stops gathering content after the selected token limit. Export files are split when they exceed this limit.
 
 ## License
 

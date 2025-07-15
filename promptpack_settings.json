@@ -20,5 +20,6 @@
     "tree_only": false,
     "include_heading": true,
     "use_code_block": true,
-    "theme": "dark"
+    "theme": "dark",
+    "max_tokens": 200000
 }
