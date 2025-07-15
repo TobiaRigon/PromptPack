@@ -16,6 +16,9 @@
 - Passwords and API keys in the output are masked for safety
 - Exports larger than the chosen token limit are automatically split into multiple files
 - Select a token limit preset (ChatGPT, Gemini, Claude) or set a custom value
+- Copy the preview to the clipboard with one click
+- Select or deselect all files at once when choosing what to include
+- Remaining token counter shows usage versus limit
 
 ## Requirements
 
@@ -109,6 +112,8 @@ body {
 - All preview and configuration windows inherit the custom icon (`promptpack.ico`), if available.
 - The "Select Files to Include" window uses a dark background when the dark theme is enabled.
 - To avoid slowdowns, preview stops gathering content after the selected token limit. Export files are split when they exceed this limit.
+- A clipboard button lets you quickly copy the preview text.
+- A counter displays remaining tokens while selecting files.
 
 ## License
 

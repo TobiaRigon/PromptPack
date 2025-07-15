@@ -91,6 +91,9 @@ class PromptPackApp:
         ttk.Label(self.root, text="Preview", **heading_opts)\
             .grid(row=3, column=1, sticky="ew", padx=10, pady=(20, 5))
 
+        ttk.Button(self.root, text="Copy to Clipboard", command=self.copy_preview)\
+            .grid(row=4, column=0, pady=5)
+
         ttk.Button(self.root, text="Preview in browser", command=self.preview_in_browser)\
             .grid(row=4, column=1, pady=5)
 
@@ -343,6 +346,11 @@ class PromptPackApp:
                 apply_icon(self.preview_window)
                 self.preview_text = tk.Text(self.preview_window, wrap="word")
                 self.preview_text.pack(fill="both", expand=True)
+                ttk.Button(
+                    self.preview_window,
+                    text="Copy to Clipboard",
+                    command=lambda: self.copy_text_widget(self.preview_text),
+                ).pack(pady=5)
                 self.apply_theme()
             self.preview_text.delete("1.0", "end")
             self.preview_text.insert("1.0", preview_text)
@@ -417,6 +425,23 @@ class PromptPackApp:
             tmp.write(html)
             webbrowser.open(f"file://{tmp.name}")
 
+    def copy_text_widget(self, widget: tk.Text):
+        text = widget.get("1.0", "end-1c")
+        self.root.clipboard_clear()
+        self.root.clipboard_append(text)
+        self.root.update()
+        messagebox.showinfo("Copied", "Content copied to clipboard")
+
+    def copy_preview(self):
+        if not self.selected_files:
+            messagebox.showwarning("No Files", "No files selected for preview.")
+            return
+        text = self.get_preview_text(self.selected_files)
+        self.root.clipboard_clear()
+        self.root.clipboard_append(text)
+        self.root.update()
+        messagebox.showinfo("Copied", "Preview copied to clipboard")
+
     def select_files(self):
         folder = self.start_folder.get()
         if not folder:
@@ -457,7 +482,12 @@ class PromptPackApp:
         tree.column("type", width=80)
         tree.pack(fill=tk.BOTH, expand=True)
 
+        token_label = ttk.Label(selector, text="")
+        token_label.pack(pady=2)
+
         checkbox_vars = {}
+        checkbox_items = {}
+        all_state = tk.BooleanVar(value=False)
 
         def insert_items(parent, path: Path):
             for p in sorted(path.iterdir()):
@@ -474,11 +504,17 @@ class PromptPackApp:
                         )
                     )
                     var = tk.BooleanVar(value=default_checked)
+                    item = tree.insert(parent, 'end', text=f"[{'x' if var.get() else ' '}] {p.name}", values=(str(p), "file"))
                     checkbox_vars[str(p)] = var
-                    label = f"[{'x' if var.get() else ' '}] {p.name}"
-                    tree.insert(parent, 'end', text=label, values=(str(p), "file"))
+                    checkbox_items[str(p)] = item
 
         insert_items('', Path(folder))
+        update_token_label()
+
+        def update_token_label():
+            tokens = self.compute_token_count({Path(p) for p, var in checkbox_vars.items() if var.get()})
+            max_tokens = self.settings.get("max_tokens", 200000)
+            token_label.config(text=f"Tokens: {tokens} / {max_tokens}")
 
         def update_preview_live():
             if self.enable_preview.get():
@@ -492,6 +528,7 @@ class PromptPackApp:
                     self.apply_theme()
                 self.preview_text.delete("1.0", "end")
                 self.preview_text.insert("1.0", preview_text)
+            update_token_label()
 
         def toggle_checkbox(event):
             item = tree.identify_row(event.y)
@@ -507,8 +544,21 @@ class PromptPackApp:
                 new_label = f"[{'x' if var.get() else ' '}] {Path(path_str).name}"
                 tree.item(item, text=new_label)
                 update_preview_live()
+                update_token_label()
 
         tree.bind("<Button-1>", toggle_checkbox)
+
+        def toggle_all():
+            new_val = not all_state.get()
+            all_state.set(new_val)
+            for path_str, var in checkbox_vars.items():
+                var.set(new_val)
+                item = checkbox_items[path_str]
+                tree.item(item, text=f"[{'x' if new_val else ' '}] {Path(path_str).name}")
+            update_preview_live()
+            update_token_label()
+
+        ttk.Button(selector, text="Select/Deselect All", command=toggle_all).pack(pady=5)
 
         ttk.Button(
             selector,
@@ -520,11 +570,18 @@ class PromptPackApp:
             ),
         ).pack(pady=5)
 
+    def compute_token_count(self, included_files):
+        preview_lines = self.generate_preview_lines(self.start_folder.get(), included_files)
+        full_text = "\n".join(preview_lines)
+        return estimate_token_count(full_text)
+
     def get_preview_text(self, included_files):
         preview_lines = self.generate_preview_lines(self.start_folder.get(), included_files)
         full_text = "\n".join(preview_lines)
         token_count = estimate_token_count(full_text)
-        header = f"Token estimate: {token_count}\n{'='*40}\n"
+        max_tokens = self.settings.get("max_tokens", 200000)
+        remaining = max_tokens - token_count
+        header = f"Token estimate: {token_count} (remaining {remaining})\n{'='*40}\n"
         return header + full_text
 
     def generate_preview_lines(self, start_folder, included_files):
