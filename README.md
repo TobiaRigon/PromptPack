@@ -12,7 +12,8 @@
 - Choose export format (TXT, Markdown or JSON) and optionally include code blocks and headings
 - Optionally export only the file tree without contents
 - Switch between dark and light mode, with buttons and fields adopting dark colors when the theme is set to "dark"
-- Drag and drop a folder onto the window to quickly set the source folder
+- Files listed in a `.gitignore` file are automatically deselected
+- Passwords and API keys in the output are masked for safety
 - Exports larger than the chosen token limit are automatically split into multiple files
 - Select a token limit preset (ChatGPT, Gemini, Claude) or set a custom value
 
@@ -47,7 +48,7 @@ The file `promptpack.py` simply launches the application.
 
 ## How to Use
 
-1. **Start Folder**: Click *Browse* or simply drag a folder onto the window to set the source directory.
+1. **Start Folder**: Click *Browse* to select the folder containing the files you want to include.
 2. **Select Files**: Opens an expandable tree of all folders and files. You can include/exclude each item via checkboxes.
    - Default selections are based on the current settings.
 3. **Settings**: Define default allowed extensions, excluded folders and files. Also choose:
@@ -103,6 +104,8 @@ body {
 
 - Only files with allowed extensions are included by default.
 - Hidden folders and ignored files are shown but deselected by default.
+- If a `.gitignore` file is present, its patterns are also deselected automatically.
+- Detected passwords and API keys are replaced with `***` in the preview and export.
 - All preview and configuration windows inherit the custom icon (`promptpack.ico`), if available.
 - The "Select Files to Include" window uses a dark background when the dark theme is enabled.
 - To avoid slowdowns, preview stops gathering content after the selected token limit. Export files are split when they exceed this limit.

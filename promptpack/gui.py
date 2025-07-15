@@ -1,9 +1,5 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, Toplevel, ttk
-try:
-    from tkinterdnd2 import DND_FILES
-except Exception:  # library may not be available
-    DND_FILES = None
 from pathlib import Path
 from datetime import datetime
 from tempfile import NamedTemporaryFile
@@ -11,7 +7,8 @@ import webbrowser
 import markdown
 
 from .settings import load_settings, save_settings
-from .utils import apply_icon, estimate_token_count, LANG_MAP, generate_output
+from pathspec import PathSpec
+from .utils import apply_icon, estimate_token_count, LANG_MAP, generate_output, sanitize_sensitive_data
 
 
 class ListDialog(simpledialog.Dialog):
@@ -40,9 +37,6 @@ class PromptPackApp:
         root.title("PromptPack")
         apply_icon(root)
 
-        if DND_FILES and hasattr(self.root, "drop_target_register"):
-            self.root.drop_target_register(DND_FILES)
-            self.root.dnd_bind("<<Drop>>", self.handle_drop)
 
         self.settings = load_settings()
 
@@ -56,6 +50,7 @@ class PromptPackApp:
         self.start_folder = tk.StringVar()
         self.dest_folder = tk.StringVar()
         self.selected_files = set()
+        self.gitignore_spec = None
 
         self.preview_window = None
         self.preview_text = None
@@ -85,9 +80,6 @@ class PromptPackApp:
 
         entry = ttk.Entry(self.root, textvariable=self.start_folder, width=50)
         entry.grid(row=1, column=1, padx=5, pady=5)
-        if DND_FILES and hasattr(entry, "drop_target_register"):
-            entry.drop_target_register(DND_FILES)
-            entry.dnd_bind("<<Drop>>", self.handle_drop)
 
         ttk.Button(self.root, text="Browse", command=self.browse_start)\
             .grid(row=1, column=2, padx=5, pady=5)
@@ -227,19 +219,6 @@ class PromptPackApp:
             self.start_folder.set(folder)
             self.update_default_selected_files(Path(folder))
 
-    def handle_drop(self, event):
-        if not event.data:
-            return
-        path = event.data.strip()
-        if path.startswith("{") and path.endswith("}"):
-            path = path[1:-1]
-        if " " in path:
-            path = path.split()[0]
-        if path.startswith("file://"):
-            path = path[7:]
-        if Path(path).is_dir():
-            self.start_folder.set(path)
-            self.update_default_selected_files(Path(path))
 
     def browse_dest(self):
         folder = filedialog.askdirectory()
@@ -337,13 +316,22 @@ class PromptPackApp:
         return f.suffix in self.settings["allowed_exts"] and f.name not in self.settings["excluded_files"]
 
     def update_default_selected_files(self, folder_path: Path):
+        gitignore_file = folder_path / ".gitignore"
+        if gitignore_file.exists():
+            with gitignore_file.open("r", encoding="utf-8") as f:
+                self.gitignore_spec = PathSpec.from_lines("gitwildmatch", f)
+        else:
+            self.gitignore_spec = None
+
         all_files = folder_path.rglob("*")
+        spec = self.gitignore_spec
         self.selected_files = {
             f
             for f in all_files
             if f.is_file()
             and self.is_valid(f)
             and not any(excl in f.parts for excl in self.settings["excluded_dirs"])
+            and not (spec and spec.match_file(str(f.relative_to(folder_path))))
         }
 
     def toggle_preview_window(self):
@@ -477,8 +465,13 @@ class PromptPackApp:
                     node = tree.insert(parent, 'end', text=p.name, values=(str(p), "dir"), open=False)
                     insert_items(node, p)
                 else:
-                    default_checked = self.is_valid(p) and not any(
-                        skip in p.parts for skip in self.settings["excluded_dirs"]
+                    default_checked = (
+                        self.is_valid(p)
+                        and not any(skip in p.parts for skip in self.settings["excluded_dirs"])
+                        and not (
+                            self.gitignore_spec
+                            and self.gitignore_spec.match_file(str(p.relative_to(folder)))
+                        )
                     )
                     var = tk.BooleanVar(value=default_checked)
                     checkbox_vars[str(p)] = var
@@ -557,6 +550,7 @@ class PromptPackApp:
                 content = path.read_text(encoding='utf-8', errors='ignore')
             except Exception:
                 continue
+            content = sanitize_sensitive_data(content)
             chunk = []
             if self.include_heading.get():
                 chunk.append(f"## {rel_path.as_posix()}\n")

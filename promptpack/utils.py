@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from pathlib import Path
 from datetime import datetime
 from tempfile import NamedTemporaryFile
@@ -27,6 +28,20 @@ def apply_icon(window):
 
 def estimate_token_count(text: str) -> int:
     return int(len(text) / 4)
+
+
+SENSITIVE_PATTERNS = [
+    re.compile(r"(?i)(api[_-]?key\s*[:=]\s*)(['\"]?)([^'\"\s]+)(['\"]?)"),
+    re.compile(r"(?i)(password\s*[:=]\s*)(['\"]?)([^'\"\s]+)(['\"]?)"),
+    re.compile(r"(?i)(secret[_-]?key\s*[:=]\s*)(['\"]?)([^'\"\s]+)(['\"]?)"),
+]
+
+
+def sanitize_sensitive_data(text: str) -> str:
+    """Mask common secrets such as passwords or API keys."""
+    for pat in SENSITIVE_PATTERNS:
+        text = pat.sub(lambda m: m.group(1) + m.group(2) + "***" + m.group(4), text)
+    return text
 
 
 def generate_output(
@@ -100,6 +115,7 @@ def generate_output(
             content = path.read_text(encoding='utf-8', errors='ignore')
         except Exception:
             continue
+        content = sanitize_sensitive_data(content)
 
         if export_format == "json":
             block_tokens = estimate_token_count(content)
