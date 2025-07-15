@@ -39,32 +39,59 @@ def generate_output(
     use_code_block: bool,
     max_tokens: int = 200000,
 ):
+    """Export selected files in the chosen format.
+
+    The output is split into multiple parts if the number of tokens exceeds
+    ``max_tokens``. Each part is saved sequentially in the destination folder.
+    """
     project_name = Path(start_folder).name
     date_str = datetime.now().strftime('%Y%m%d')
     token_count = 0
+    part = 1
+    output_files = []
 
     if export_format == "json":
         data = {"project": project_name, "date": date_str, "files": []}
+        lines = []
+        header = ""
+        token_count = 0
     else:
         lines = []
         header = f"Project: {project_name} - {date_str}\n\n"
         lines.append(header)
         token_count = estimate_token_count(header)
 
+    def _flush():
+        nonlocal part, data, lines
+        if export_format == "json":
+            output_file = Path(dest_folder) / f"{project_name}-{date_str}-part{part}.json"
+            output_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        else:
+            suffix = "md" if export_format == "md" else "txt"
+            output_file = Path(dest_folder) / f"{project_name}-{date_str}-part{part}.{suffix}"
+            output_file.write_text("".join(lines), encoding="utf-8")
+        part += 1
+        return output_file
+
     for path in included_files:
         rel_path = path.relative_to(start_folder)
         if tree_only:
             if export_format == "json":
+                line_data = {"path": rel_path.as_posix()}
                 block_tokens = estimate_token_count(rel_path.as_posix())
                 if token_count + block_tokens > max_tokens:
-                    break
-                data["files"].append({"path": rel_path.as_posix()})
+                    output_files.append(_flush())
+                    token_count = estimate_token_count(header)
+                    data = {"project": project_name, "date": date_str, "files": []}
+                data["files"].append(line_data)
                 token_count += block_tokens
             else:
                 line = f"{rel_path.as_posix()}\n"
                 block_tokens = estimate_token_count(line)
                 if token_count + block_tokens > max_tokens:
-                    break
+                    output_files.append(_flush())
+                    token_count = estimate_token_count(header)
+                    lines = [header]
                 lines.append(line)
                 token_count += block_tokens
             continue
@@ -77,7 +104,9 @@ def generate_output(
         if export_format == "json":
             block_tokens = estimate_token_count(content)
             if token_count + block_tokens > max_tokens:
-                break
+                output_files.append(_flush())
+                token_count = estimate_token_count(header)
+                data = {"project": project_name, "date": date_str, "files": []}
             data["files"].append({"path": rel_path.as_posix(), "content": content})
             token_count += block_tokens
         else:
@@ -92,17 +121,12 @@ def generate_output(
             block = ''.join(new_lines)
             block_tokens = estimate_token_count(block)
             if token_count + block_tokens > max_tokens:
-                break
+                output_files.append(_flush())
+                token_count = estimate_token_count(header)
+                lines = [header]
             lines.append(block)
             token_count += block_tokens
 
-    if export_format == "json":
-        output_file = Path(dest_folder) / f"{project_name}-{date_str}.json"
-        output_file.write_text(json.dumps(data, indent=2), encoding='utf-8')
-    else:
-        suffix = 'md' if export_format == 'md' else 'txt'
-        output_file = Path(dest_folder) / f"{project_name}-{date_str}.{suffix}"
-        output_file.write_text(''.join(lines), encoding='utf-8')
-
-    return output_file
+    output_files.append(_flush())
+    return output_files
 

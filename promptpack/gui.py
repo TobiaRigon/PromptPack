@@ -1,5 +1,9 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, Toplevel, ttk
+try:
+    from tkinterdnd2 import DND_FILES
+except Exception:  # library may not be available
+    DND_FILES = None
 from pathlib import Path
 from datetime import datetime
 from tempfile import NamedTemporaryFile
@@ -35,6 +39,10 @@ class PromptPackApp:
         self.root = root
         root.title("PromptPack")
         apply_icon(root)
+
+        if DND_FILES and hasattr(self.root, "drop_target_register"):
+            self.root.drop_target_register(DND_FILES)
+            self.root.dnd_bind("<<Drop>>", self.handle_drop)
 
         self.settings = load_settings()
 
@@ -75,8 +83,11 @@ class PromptPackApp:
         ttk.Label(self.root, text="Source Folder")\
             .grid(row=1, column=0, sticky="w", padx=10, pady=5)
 
-        ttk.Entry(self.root, textvariable=self.start_folder, width=50)\
-            .grid(row=1, column=1, padx=5, pady=5)
+        entry = ttk.Entry(self.root, textvariable=self.start_folder, width=50)
+        entry.grid(row=1, column=1, padx=5, pady=5)
+        if DND_FILES and hasattr(entry, "drop_target_register"):
+            entry.drop_target_register(DND_FILES)
+            entry.dnd_bind("<<Drop>>", self.handle_drop)
 
         ttk.Button(self.root, text="Browse", command=self.browse_start)\
             .grid(row=1, column=2, padx=5, pady=5)
@@ -210,6 +221,16 @@ class PromptPackApp:
             self.start_folder.set(folder)
             self.update_default_selected_files(Path(folder))
 
+    def handle_drop(self, event):
+        if not event.data:
+            return
+        path = event.data
+        if path.startswith('{') and path.endswith('}'):
+            path = path[1:-1]
+        if Path(path).is_dir():
+            self.start_folder.set(path)
+            self.update_default_selected_files(Path(path))
+
     def browse_dest(self):
         folder = filedialog.askdirectory()
         if folder:
@@ -231,23 +252,23 @@ class PromptPackApp:
             if result is not None:
                 self.settings[key] = [x.strip() for x in result.split(",") if x.strip()]
         ttk.Label(win, text="Default Selection", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Button(win, text="Defailt Allowed Extensions", command=lambda: prompt_list("Defailt Allowed Extensions", "allowed_exts")).pack(pady=5)
-        ttk.Button(win, text="Defailt Excluded Directories", command=lambda: prompt_list("Defailt Excluded Directories", "excluded_dirs")).pack(pady=5)
-        ttk.Button(win, text="Defailt Excluded Files", command=lambda: prompt_list("Defailt Excluded Files", "excluded_files")).pack(pady=5)
+        ttk.Button(win, text="Default Allowed Extensions", command=lambda: prompt_list("Default Allowed Extensions", "allowed_exts")).pack(pady=5)
+        ttk.Button(win, text="Default Excluded Directories", command=lambda: prompt_list("Default Excluded Directories", "excluded_dirs")).pack(pady=5)
+        ttk.Button(win, text="Default Excluded Files", command=lambda: prompt_list("Default Excluded Files", "excluded_files")).pack(pady=5)
 
         ttk.Label(win, text="Output Options", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Label(win, text="Formato esportazione:").pack(pady=(5, 0))
+        ttk.Label(win, text="Export format:").pack(pady=(5, 0))
         ttk.Radiobutton(win, text="TXT", variable=self.export_format, value="txt").pack(pady=2)
         ttk.Radiobutton(win, text="Markdown", variable=self.export_format, value="md").pack(pady=2)
         ttk.Radiobutton(win, text="JSON", variable=self.export_format, value="json").pack(pady=2)
         ttk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(pady=5)
         ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(pady=5)
-        ttk.Checkbutton(win, text="Solo albero file", variable=self.tree_only).pack(pady=5)
+        ttk.Checkbutton(win, text="Tree only", variable=self.tree_only).pack(pady=5)
 
 
         ttk.Label(win, text="Theme", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Radiobutton(win, text="Chiaro", variable=self.theme, value="light", command=self.apply_theme).pack(pady=5)
-        ttk.Radiobutton(win, text="Scuro", variable=self.theme, value="dark", command=self.apply_theme).pack(pady=5)
+        ttk.Radiobutton(win, text="Light", variable=self.theme, value="light", command=self.apply_theme).pack(pady=5)
+        ttk.Radiobutton(win, text="Dark", variable=self.theme, value="dark", command=self.apply_theme).pack(pady=5)
 
         def save_and_close():
             new_settings = {
@@ -501,8 +522,8 @@ class PromptPackApp:
             tokens = estimate_token_count(text)
             if token_count + tokens > max_tokens:
                 messagebox.showwarning(
-                    "Limite superato",
-                    f"Raggiunto il limite di {max_tokens} token. Alcuni file sono stati ignorati.",
+                    "Limit reached",
+                    f"Reached the limit of {max_tokens} tokens. Some files were skipped.",
                 )
                 break
             lines.extend(chunk)
@@ -517,7 +538,7 @@ class PromptPackApp:
             messagebox.showerror("Error", "No files selected")
             return
         try:
-            output_path = generate_output(
+            output_paths = generate_output(
                 self.start_folder.get(),
                 self.dest_folder.get(),
                 list(self.selected_files),
@@ -527,6 +548,7 @@ class PromptPackApp:
                 self.use_code_block.get(),
                 self.settings.get("max_tokens", 200000),
             )
-            messagebox.showinfo("Done", f"File generated: {output_path}")
+            msg = "\n".join(str(p) for p in output_paths)
+            messagebox.showinfo("Done", f"Files generated:\n{msg}")
         except Exception as e:
             messagebox.showerror("Error", str(e))

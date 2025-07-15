@@ -11,7 +11,9 @@
 - Saves and loads user settings to/from a JSON file
 - Choose export format (TXT, Markdown or JSON) and optionally include code blocks and headings
 - Optionally export only the file tree without contents
-- Switch between dark and light mode, con pulsanti e campi scuri quando il tema è impostato su "dark"
+- Switch between dark and light mode, with buttons and fields adopting dark colors when the theme is set to "dark"
+- Drag and drop a folder onto the window to quickly set the source folder
+- Exports larger than 200,000 tokens are automatically split into multiple files
 
 ## Requirements
 
@@ -33,18 +35,18 @@
    ```
 
  
-## Struttura del progetto
+## Project Structure
 
-Il codice sorgente è organizzato nel pacchetto `promptpack`:
-- `gui.py` contiene l'interfaccia grafica.
-- `settings.py` gestisce le impostazioni.
-- `utils.py` racchiude le funzioni di supporto.
+The source code is organized in the `promptpack` package:
+- `gui.py` contains the graphical interface.
+- `settings.py` manages the application settings.
+- `utils.py` includes supporting functions.
 
-Il file `promptpack.py` avvia semplicemente l'applicazione.
+The file `promptpack.py` simply launches the application.
 
 ## How to Use
 
-1. **Start Folder**: Click *Browse* to select the folder containing the files you want to include.
+1. **Start Folder**: Click *Browse* or simply drag a folder onto the window to set the source directory.
 2. **Select Files**: Opens an expandable tree of all folders and files. You can include/exclude each item via checkboxes.
    - Default selections are based on the current settings.
 3. **Settings**: Define default allowed extensions, excluded folders and files. Also choose:
@@ -77,7 +79,7 @@ User preferences are saved in a file named `promptpack_settings.json` in the sam
 If Markdown and code blocks are enabled, the output will look like:
 
 ````markdown
-Progetto: my-app - 20250710
+Project: my-app - 20250710
 
 ## src/index.js
 
@@ -99,8 +101,8 @@ body {
 - Only files with allowed extensions are included by default.
 - Hidden folders and ignored files are shown but deselected by default.
 - All preview and configuration windows inherit the custom icon (`promptpack.ico`), if available.
-- La finestra "Select Files to Include" adotta uno sfondo scuro quando è attivo il tema dark.
-- Per evitare rallentamenti, l'anteprima e l'esportazione interrompono la raccolta dei contenuti al raggiungimento di 200 000 token.
+- The "Select Files to Include" window uses a dark background when the dark theme is enabled.
+- To avoid slowdowns, preview stops gathering content after 200 000 tokens. Export automatically splits files every 200 000 tokens.
 
 ## License
 
