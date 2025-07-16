@@ -1,6 +1,6 @@
 # PromptPack
 
-**PromptPack** is a desktop application written in Python with Tkinter that allows you to quickly generate summaries of selected source files in Markdown, plain text or JSON format. It's designed for developers and technical writers who need to prepare code documentation, share source samples, or create prompt material for LLMs.
+**PromptPack** è un'applicazione desktop scritta in Python con PySide6 che permette di generare rapidamente riassunti di file sorgenti selezionati in formato Markdown, testo semplice o JSON. È pensata per sviluppatori e technical writer che devono preparare documentazione o materiale per LLM.
 
 ## Features
 
@@ -26,8 +26,8 @@
 
 ## Requirements
 
-- Python 3.7+
-- Tkinter (comes pre-installed with Python on most systems)
+ - Python 3.7+
+ - PySide6
 
 ## Installation
 
@@ -40,18 +40,16 @@
    ```
 3. Run the script:
    ```bash
-   python promptpack.py
+   python -m promptpack
    ```
 
  
 ## Project Structure
 
 The source code is organized in the `promptpack` package:
-- `gui.py` contains the graphical interface.
+- `gui_qt.py` contiene l'interfaccia grafica.
 - `settings.py` manages the application settings.
 - `utils.py` includes supporting functions.
-
-The file `promptpack.py` simply launches the application.
 
 ## How to Use
 
