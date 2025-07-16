@@ -1,12 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+block_cipher = None
 
 a = Analysis(
-    ['__main__.py'],
-    pathex=[],
+    ['promptpack/__main__.py'],
+    pathex=['.'],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=['pathspec', 'markdown'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -22,7 +23,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='__main__',
+    name='promptpack',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -35,5 +36,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['icon.ico'],
+    icon=['promptpack.ico'],
 )

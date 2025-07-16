@@ -565,7 +565,7 @@
         "LICENSE",
         "promptpack\\__init__.py",
         "promptpack\\__main__.py",
-        "promptpack\\__main__.spec",
+        "promptpack\\promptpack.spec",
         "promptpack\\__pycache__\\__init__.cpython-312.pyc",
         "promptpack\\__pycache__\\__main__.cpython-312.pyc",
         "promptpack\\__pycache__\\cli.cpython-312.pyc",
