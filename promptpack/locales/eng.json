@@ -49,5 +49,8 @@
     "need_folders": "Please select both source and destination folders",
     "token_header": "Token estimate: {count} (remaining {remaining})\n{sep}\n",
     "tokens": "Tokens: {tokens} / {max}",
-    "project_label": "Project: {name} - {date}"
+    "project_label": "Project: {name} - {date}",
+    "search": "Search",
+    "extension_filter": "Extension filter",
+    "all": "All"
 }

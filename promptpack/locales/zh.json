@@ -47,5 +47,8 @@
   "need_folders": "请选择源文件夹和目标文件夹",
   "token_header": "令牌估算：{count}（剩余 {remaining}）\n{sep}\n",
   "tokens": "令牌：{tokens} / {max}",
-  "project_label": "项目：{name} - {date}"
+  "project_label": "项目：{name} - {date}",
+  "search": "搜索",
+  "extension_filter": "按扩展名过滤",
+  "all": "全部"
 }

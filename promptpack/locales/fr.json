@@ -49,5 +49,8 @@
     "need_folders": "Sélectionnez à la fois le dossier source et le dossier de destination",
     "token_header": "Estimation des jetons : {count} (reste {remaining})\n{sep}\n",
     "tokens": "Jetons : {tokens} / {max}",
-    "project_label": "Projet : {name} - {date}"
+    "project_label": "Projet : {name} - {date}",
+    "search": "Recherche",
+    "extension_filter": "Filtrer par extension",
+    "all": "Tous"
 }

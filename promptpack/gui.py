@@ -93,7 +93,8 @@ class PromptPackApp:
 
         self.preview_window = None
         self.preview_text = None
-        self.progress_win = None
+        self.progress_frame = None
+        self.progress_label = None
         self.progress_bar = None
         self.progress_var = tk.IntVar(value=0)
 
@@ -185,6 +186,15 @@ class PromptPackApp:
         self.gear_button.bind("<Enter>", lambda e: self.gear_button.config(cursor="hand2"))
         self.gear_button.bind("<Leave>", lambda e: self.gear_button.config(cursor=""))
         Tooltip(self.gear_button, self.t("settings_tip"))
+
+        # Progress bar at bottom
+        self.progress_frame = ttk.Frame(self.root)
+        self.progress_frame.grid(row=9, column=0, columnspan=3, sticky="ew", pady=(5, 10))
+        self.progress_label = ttk.Label(self.progress_frame, text="")
+        self.progress_label.pack(side="left", padx=5)
+        self.progress_bar = ttk.Progressbar(self.progress_frame, variable=self.progress_var, mode="determinate")
+        self.progress_bar.pack(side="left", fill="x", expand=True, padx=5)
+        self.progress_frame.grid_remove()
 
     def update_texts(self):
         self.source_heading.config(text=self.t("source"))
@@ -280,30 +290,26 @@ class PromptPackApp:
         )
         style.map("TMenubutton", background=[], foreground=[])
 
+        if self.progress_frame:
+            self.progress_frame.configure(background=palette["background"])
+            self.progress_label.configure(background=palette["background"], foreground=palette["foreground"])
+            style.configure("TProgressbar", background=palette["activeBackground"], troughcolor=palette["background"])
+
         if self.preview_window and self.preview_window.winfo_exists():
             self.preview_window.tk_setPalette(**palette)
             if self.preview_text:
                 self.preview_text.configure(bg=palette["background"], fg=palette["foreground"])
 
     def show_progress(self, message: str, maximum: int | None = None):
-        if self.progress_win and self.progress_win.winfo_exists():
-            self.progress_win.destroy()
-        self.progress_win = Toplevel(self.root)
-        self.progress_win.title(message)
-        apply_icon(self.progress_win)
-        ttk.Label(self.progress_win, text=message).pack(padx=10, pady=10)
+        self.progress_label.config(text=message)
         mode = "indeterminate" if maximum is None else "determinate"
-        self.progress_bar = ttk.Progressbar(
-            self.progress_win,
-            variable=self.progress_var,
-            maximum=maximum if maximum is not None else 100,
-            mode=mode,
-        )
-        self.progress_bar.pack(padx=10, pady=10)
+        self.progress_bar.config(mode=mode, maximum=maximum if maximum is not None else 100)
+        self.progress_var.set(0)
         if mode == "indeterminate":
             self.progress_bar.start()
-        self.progress_win.transient(self.root)
-        self.progress_win.grab_set()
+        else:
+            self.progress_bar.stop()
+        self.progress_frame.grid()
 
     def update_progress(self, value: int, maximum: int):
         if self.progress_bar and self.progress_bar["mode"] == "determinate":
@@ -312,11 +318,9 @@ class PromptPackApp:
             self.progress_bar.update_idletasks()
 
     def hide_progress(self):
-        if self.progress_bar:
-            if self.progress_bar["mode"] == "indeterminate":
-                self.progress_bar.stop()
-        if self.progress_win and self.progress_win.winfo_exists():
-            self.progress_win.destroy()
+        if self.progress_bar and self.progress_bar["mode"] == "indeterminate":
+            self.progress_bar.stop()
+        self.progress_frame.grid_remove()
 
     def build_preview_async(self, files):
         self.show_progress(self.t("preview"))
@@ -626,6 +630,22 @@ class PromptPackApp:
             foreground=palette["foreground"],
         )
 
+        top_controls = ttk.Frame(selector)
+        top_controls.pack(fill="x", pady=5)
+        ttk.Label(top_controls, text=self.t("search")).pack(side="left", padx=5)
+        search_var = tk.StringVar()
+        search_entry = ttk.Entry(top_controls, textvariable=search_var, width=20)
+        search_entry.pack(side="left", padx=5)
+
+        ttk.Label(top_controls, text=self.t("extension_filter")).pack(side="left", padx=5)
+        ext_var = tk.StringVar(value=self.t("all"))
+        ext_options = [self.t("all")] + self.settings.get("allowed_exts", [])
+        ext_combo = ttk.Combobox(top_controls, textvariable=ext_var, values=ext_options, state="readonly", width=10)
+        ext_combo.pack(side="left", padx=5)
+
+        all_state = tk.BooleanVar(value=False)
+        ttk.Checkbutton(top_controls, text=self.t("select_deselect"), variable=all_state, command=lambda: toggle_all()).pack(side="left", padx=5)
+
         frame = ttk.Frame(selector)
         frame.pack(fill=tk.BOTH, expand=True)
         frame.columnconfigure(0, weight=1)
@@ -650,35 +670,50 @@ class PromptPackApp:
 
         checkbox_vars = {}
         checkbox_items = {}
-        all_state = tk.BooleanVar(value=False)
 
         def update_token_label():
             tokens = self.compute_token_count({Path(p) for p, var in checkbox_vars.items() if var.get()})
             max_tokens = self.settings.get("max_tokens", 200000)
             token_label.config(text=self.t("tokens", tokens=tokens, max=max_tokens))
 
-        def insert_items(parent, path: Path):
-            for p in sorted(path.iterdir()):
-                if p.is_dir():
-                    node = tree.insert(parent, 'end', text=p.name, values=(str(p), "dir"), open=False)
-                    insert_items(node, p)
-                else:
-                    default_checked = (
-                        self.is_valid(p)
-                        and not any(skip in p.parts for skip in self.settings["excluded_dirs"])
-                        and not (
-                            self.gitignore_spec
-                            and self.gitignore_spec.match_file(str(p.relative_to(folder)))
-                        )
-                    )
-                    checked = p in self.selected_files or default_checked
-                    var = tk.BooleanVar(value=checked)
-                    item = tree.insert(parent, 'end', text=f"[{'x' if var.get() else ' '}] {p.name}", values=(str(p), "file"))
-                    checkbox_vars[str(p)] = var
-                    checkbox_items[str(p)] = item
+        def refresh_tree(*_):
+            tree.delete(*tree.get_children())
+            checkbox_vars.clear()
+            checkbox_items.clear()
+            search = search_var.get().lower()
+            ext_filter = ext_var.get()
+            if ext_filter == self.t("all"):
+                ext_filter = ""
 
-        insert_items('', Path(folder))
-        update_token_label()
+            def insert_items(parent, path: Path):
+                for p in sorted(path.iterdir()):
+                    if p.is_dir():
+                        node = tree.insert(parent, 'end', text=p.name, values=(str(p), "dir"), open=False)
+                        insert_items(node, p)
+                    else:
+                        if ext_filter and p.suffix != ext_filter:
+                            continue
+                        if search and search not in p.name.lower():
+                            continue
+                        default_checked = (
+                            self.is_valid(p)
+                            and not any(skip in p.parts for skip in self.settings["excluded_dirs"])
+                            and not (
+                                self.gitignore_spec
+                                and self.gitignore_spec.match_file(str(p.relative_to(folder)))
+                            )
+                        )
+                        checked = p in self.selected_files or default_checked
+                        var = tk.BooleanVar(value=checked)
+                        item = tree.insert(parent, 'end', text=f"[{'x' if var.get() else ' '}] {p.name}", values=(str(p), "file"))
+                        checkbox_vars[str(p)] = var
+                        checkbox_items[str(p)] = item
+
+            insert_items('', Path(folder))
+            update_preview_live()
+            update_token_label()
+
+        refresh_tree()
 
         def update_preview_live():
             if self.enable_preview.get():
@@ -714,7 +749,8 @@ class PromptPackApp:
             update_preview_live()
             update_token_label()
 
-        ttk.Button(selector, text=self.t("select_deselect"), command=toggle_all).pack(pady=5)
+        search_entry.bind("<KeyRelease>", refresh_tree)
+        ext_combo.bind("<<ComboboxSelected>>", refresh_tree)
 
         def confirm_selection():
             self.selected_files = {Path(p) for p, var in checkbox_vars.items() if var.get()}
