@@ -187,10 +187,10 @@ class PromptPackApp:
         self.gear_button.bind("<Leave>", lambda e: self.gear_button.config(cursor=""))
         Tooltip(self.gear_button, self.t("settings_tip"))
 
-        # Progress bar at bottom
-        self.progress_frame = ttk.Frame(self.root)
+        # Barra di avanzamento in basso
+        self.progress_frame = tk.Frame(self.root)
         self.progress_frame.grid(row=9, column=0, columnspan=3, sticky="ew", pady=(5, 10))
-        self.progress_label = ttk.Label(self.progress_frame, text="")
+        self.progress_label = tk.Label(self.progress_frame, text="")
         self.progress_label.pack(side="left", padx=5)
         self.progress_bar = ttk.Progressbar(self.progress_frame, variable=self.progress_var, mode="determinate")
         self.progress_bar.pack(side="left", fill="x", expand=True, padx=5)
@@ -293,7 +293,11 @@ class PromptPackApp:
         if self.progress_frame:
             self.progress_frame.configure(background=palette["background"])
             self.progress_label.configure(background=palette["background"], foreground=palette["foreground"])
-            style.configure("TProgressbar", background=palette["activeBackground"], troughcolor=palette["background"])
+            style.configure(
+                "TProgressbar",
+                background=palette["activeBackground"],
+                troughcolor=palette["background"],
+            )
 
         if self.preview_window and self.preview_window.winfo_exists():
             self.preview_window.tk_setPalette(**palette)
