@@ -1,3 +1,5 @@
+import os
+import sys
 import tkinter as tk
 from tkinter import Toplevel, ttk, simpledialog
 from ..settings import save_settings
@@ -48,6 +50,33 @@ def configure_settings(app):
         lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
     )
 
+    # Scroll fix (cross-platform, sicuro)
+    def _on_mousewheel(event):
+        if event.widget.winfo_exists():
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_linux_scroll(event):
+        if event.num == 4:
+            canvas.yview_scroll(-1, "units")
+        elif event.num == 5:
+            canvas.yview_scroll(1, "units")
+
+    def _bind_scroll_events(widget):
+        if os.name == "nt" or sys.platform == "darwin":
+            widget.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _on_mousewheel))
+            widget.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
+        else:
+            widget.bind("<Enter>", lambda e: (
+                canvas.bind_all("<Button-4>", _on_linux_scroll),
+                canvas.bind_all("<Button-5>", _on_linux_scroll)
+            ))
+            widget.bind("<Leave>", lambda e: (
+                canvas.unbind_all("<Button-4>"),
+                canvas.unbind_all("<Button-5>")
+            ))
+
+    _bind_scroll_events(scrollable)
+
     style = ttk.Style(win)
     style.configure("Heading.TLabel", font=("TkDefaultFont", 15, "bold"))
 
@@ -91,7 +120,7 @@ def configure_settings(app):
     token_frame.pack(pady=5)
     token_menu = ttk.OptionMenu(token_frame, app.max_tokens_choice, preset_label, *preset_names, command=lambda *_: toggle_entry())
     token_menu.pack()
-    # remove hover highlight from dropdown menu
+
     menu_widget = token_menu["menu"]
     bg = "#2d2d2d" if app.theme.get() == "dark" else "#ffffff"
     fg = "#dcdcdc" if app.theme.get() == "dark" else "#000000"
@@ -134,4 +163,3 @@ def configure_settings(app):
         win.destroy()
 
     ttk.Button(scrollable, text=app.t("save"), command=save_and_close).pack(pady=10)
-
