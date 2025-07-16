@@ -11,6 +11,31 @@ from pathspec import PathSpec
 from .utils import apply_icon, estimate_token_count, LANG_MAP, generate_output, sanitize_sensitive_data
 from .i18n import load_translations, available_languages
 
+
+class Tooltip:
+    def __init__(self, widget, text: str):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+        widget.bind("<Enter>", self.show)
+        widget.bind("<Leave>", self.hide)
+
+    def show(self, _event=None):
+        if self.tipwindow or not self.text:
+            return
+        x = self.widget.winfo_rootx() + 20
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 10
+        self.tipwindow = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.geometry(f"+{x}+{y}")
+        label = ttk.Label(tw, text=self.text, relief="solid", borderwidth=1, background="#ffffe0")
+        label.pack()
+
+    def hide(self, _event=None):
+        if self.tipwindow:
+            self.tipwindow.destroy()
+            self.tipwindow = None
+
 EN_TRANSLATIONS = load_translations("eng")
 
 
@@ -119,6 +144,7 @@ class PromptPackApp:
 
         self.browser_btn = ttk.Button(self.root, text=self.t("browser"), command=self.preview_in_browser)
         self.browser_btn.grid(row=4, column=1, pady=5)
+        Tooltip(self.browser_btn, self.t("open_browser_tip"))
 
         self.live_preview_cb = ttk.Checkbutton(
             self.root,
@@ -154,6 +180,7 @@ class PromptPackApp:
         self.gear_button.grid(row=8, column=2, sticky="e", pady=5, padx=5)
         self.gear_button.bind("<Enter>", lambda e: self.gear_button.config(cursor="hand2"))
         self.gear_button.bind("<Leave>", lambda e: self.gear_button.config(cursor=""))
+        Tooltip(self.gear_button, self.t("settings_tip"))
 
     def update_texts(self):
         self.source_heading.config(text=self.t("source"))
@@ -273,7 +300,24 @@ class PromptPackApp:
         win = Toplevel(self.root)
         win.title(self.t("settings_title"))
         apply_icon(win)
-        win.geometry("500x500")
+        win.resizable(True, True)
+
+        container = ttk.Frame(win)
+        container.pack(fill="both", expand=True)
+
+        canvas = tk.Canvas(container, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        scrollable = ttk.Frame(canvas)
+        canvas.create_window((0, 0), window=scrollable, anchor="nw")
+
+        scrollable.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
 
         style = ttk.Style(win)
         style.configure("Heading.TLabel", font=("TkDefaultFont", 15, "bold"))
@@ -284,21 +328,21 @@ class PromptPackApp:
             result = dlg.result
             if result is not None:
                 self.settings[key] = [x.strip() for x in result.split(",") if x.strip()]
-        ttk.Label(win, text=self.t("default_selection"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Button(win, text=self.t("allowed_exts"), command=lambda: prompt_list(self.t("allowed_exts"), "allowed_exts")).pack(pady=5)
-        ttk.Button(win, text=self.t("excluded_dirs"), command=lambda: prompt_list(self.t("excluded_dirs"), "excluded_dirs")).pack(pady=5)
-        ttk.Button(win, text=self.t("excluded_files"), command=lambda: prompt_list(self.t("excluded_files"), "excluded_files")).pack(pady=5)
+        ttk.Label(scrollable, text=self.t("default_selection"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Button(scrollable, text=self.t("allowed_exts"), command=lambda: prompt_list(self.t("allowed_exts"), "allowed_exts")).pack(pady=5)
+        ttk.Button(scrollable, text=self.t("excluded_dirs"), command=lambda: prompt_list(self.t("excluded_dirs"), "excluded_dirs")).pack(pady=5)
+        ttk.Button(scrollable, text=self.t("excluded_files"), command=lambda: prompt_list(self.t("excluded_files"), "excluded_files")).pack(pady=5)
 
-        ttk.Label(win, text=self.t("output_opts"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Label(win, text=self.t("export_format")).pack(pady=(5, 0))
-        ttk.Radiobutton(win, text="TXT", variable=self.export_format, value="txt").pack(pady=2)
-        ttk.Radiobutton(win, text="Markdown", variable=self.export_format, value="md").pack(pady=2)
-        ttk.Radiobutton(win, text="JSON", variable=self.export_format, value="json").pack(pady=2)
-        ttk.Checkbutton(win, text=self.t("include_headings"), variable=self.include_heading).pack(pady=5)
-        ttk.Checkbutton(win, text=self.t("use_code"), variable=self.use_code_block).pack(pady=5)
-        ttk.Checkbutton(win, text=self.t("tree_only"), variable=self.tree_only).pack(pady=5)
+        ttk.Label(scrollable, text=self.t("output_opts"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Label(scrollable, text=self.t("export_format")).pack(pady=(5, 0))
+        ttk.Radiobutton(scrollable, text="TXT", variable=self.export_format, value="txt").pack(pady=2)
+        ttk.Radiobutton(scrollable, text="Markdown", variable=self.export_format, value="md").pack(pady=2)
+        ttk.Radiobutton(scrollable, text="JSON", variable=self.export_format, value="json").pack(pady=2)
+        ttk.Checkbutton(scrollable, text=self.t("include_headings"), variable=self.include_heading).pack(pady=5)
+        ttk.Checkbutton(scrollable, text=self.t("use_code"), variable=self.use_code_block).pack(pady=5)
+        ttk.Checkbutton(scrollable, text=self.t("tree_only"), variable=self.tree_only).pack(pady=5)
 
-        ttk.Label(win, text=self.t("token_limit"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Label(scrollable, text=self.t("token_limit"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
         preset_limits = {
             "ChatGPT (16k)": 16000,
             "Gemini (32k)": 32000,
@@ -314,7 +358,7 @@ class PromptPackApp:
                 break
         self.max_tokens_choice = tk.StringVar(value=preset_label)
         self.custom_max_tokens = tk.IntVar(value=current_tokens)
-        token_frame = ttk.Frame(win)
+        token_frame = ttk.Frame(scrollable)
         token_frame.pack(pady=5)
         token_menu = ttk.OptionMenu(token_frame, self.max_tokens_choice, preset_label, *preset_names, command=lambda *_: toggle_entry())
         token_menu.pack()
@@ -335,13 +379,13 @@ class PromptPackApp:
                 token_entry.pack_forget()
 
 
-        ttk.Label(win, text=self.t("theme"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Radiobutton(win, text=self.t("light"), variable=self.theme, value="light", command=self.apply_theme).pack(pady=5)
-        ttk.Radiobutton(win, text=self.t("dark"), variable=self.theme, value="dark", command=self.apply_theme).pack(pady=5)
+        ttk.Label(scrollable, text=self.t("theme"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Radiobutton(scrollable, text=self.t("light"), variable=self.theme, value="light", command=self.apply_theme).pack(pady=5)
+        ttk.Radiobutton(scrollable, text=self.t("dark"), variable=self.theme, value="dark", command=self.apply_theme).pack(pady=5)
 
-        ttk.Label(win, text=self.t("language"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Label(scrollable, text=self.t("language"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
         language_options = available_languages()
-        ttk.OptionMenu(win, self.language, self.language.get(), *language_options, command=lambda *_: None).pack(pady=5)
+        ttk.OptionMenu(scrollable, self.language, self.language.get(), *language_options, command=lambda *_: None).pack(pady=5)
 
         def save_and_close():
             new_settings = {
@@ -361,7 +405,7 @@ class PromptPackApp:
             self.update_texts()
             win.destroy()
 
-        ttk.Button(win, text=self.t("save"), command=save_and_close).pack(pady=10)
+        ttk.Button(scrollable, text=self.t("save"), command=save_and_close).pack(pady=10)
 
     def is_valid(self, f: Path) -> bool:
         return f.suffix in self.settings["allowed_exts"] and f.name not in self.settings["excluded_files"]
@@ -391,9 +435,18 @@ class PromptPackApp:
             if self.preview_window is None or not self.preview_window.winfo_exists():
                 self.preview_window = Toplevel(self.root)
                 self.preview_window.title(self.t("preview"))
+                self.preview_window.resizable(True, True)
                 apply_icon(self.preview_window)
-                self.preview_text = tk.Text(self.preview_window, wrap="word")
-                self.preview_text.pack(fill="both", expand=True)
+
+                frame = ttk.Frame(self.preview_window)
+                frame.pack(fill="both", expand=True)
+
+                self.preview_text = tk.Text(frame, wrap="word")
+                yscroll = ttk.Scrollbar(frame, command=self.preview_text.yview)
+                self.preview_text.configure(yscrollcommand=yscroll.set)
+                self.preview_text.pack(side="left", fill="both", expand=True)
+                yscroll.pack(side="right", fill="y")
+
                 ttk.Button(
                     self.preview_window,
                     text=self.t("copy"),
@@ -499,7 +552,7 @@ class PromptPackApp:
         selector = Toplevel(self.root)
         selector.title(self.t("select_files_title"))
         apply_icon(selector)
-        selector.geometry("850x500")
+        selector.resizable(True, True)
         palette = {
             "background": "#2d2d2d",
             "foreground": "#dcdcdc",
@@ -523,12 +576,24 @@ class PromptPackApp:
             foreground=palette["foreground"],
         )
 
-        tree = ttk.Treeview(selector, columns=("fullpath", "type"))
+        frame = ttk.Frame(selector)
+        frame.pack(fill=tk.BOTH, expand=True)
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(0, weight=1)
+
+        tree = ttk.Treeview(frame, columns=("fullpath", "type"))
         tree.heading("#0", text="Name")
         tree.heading("type", text="Type")
         tree.column("fullpath", width=0, stretch=False)
         tree.column("type", width=80)
-        tree.pack(fill=tk.BOTH, expand=True)
+
+        vsb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
 
         token_label = ttk.Label(selector, text="")
         token_label.pack(pady=2)
@@ -571,9 +636,17 @@ class PromptPackApp:
                 if self.preview_window is None or not self.preview_window.winfo_exists():
                     self.preview_window = Toplevel(self.root)
                     self.preview_window.title(self.t("preview"))
+                    self.preview_window.resizable(True, True)
                     apply_icon(self.preview_window)
-                    self.preview_text = tk.Text(self.preview_window, wrap="word")
-                    self.preview_text.pack(fill="both", expand=True)
+
+                    frame = ttk.Frame(self.preview_window)
+                    frame.pack(fill="both", expand=True)
+
+                    self.preview_text = tk.Text(frame, wrap="word")
+                    yscroll = ttk.Scrollbar(frame, command=self.preview_text.yview)
+                    self.preview_text.configure(yscrollcommand=yscroll.set)
+                    self.preview_text.pack(side="left", fill="both", expand=True)
+                    yscroll.pack(side="right", fill="y")
                     self.apply_theme()
                 self.preview_text.delete("1.0", "end")
                 self.preview_text.insert("1.0", preview_text)
