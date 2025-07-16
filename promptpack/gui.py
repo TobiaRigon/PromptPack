@@ -45,6 +45,7 @@ class PromptPackApp:
         self.include_heading = tk.BooleanVar(value=self.settings["include_heading"])
         self.use_code_block = tk.BooleanVar(value=self.settings["use_code_block"])
         self.theme = tk.StringVar(value=self.settings.get("theme", "dark"))
+        self.language = tk.StringVar(value=self.settings.get("language", "eng"))
         self.enable_preview = tk.BooleanVar(value=False)
 
         self.start_folder = tk.StringVar(value=self.settings.get("last_start_folder", ""))
@@ -313,6 +314,10 @@ class PromptPackApp:
         ttk.Radiobutton(win, text="Light", variable=self.theme, value="light", command=self.apply_theme).pack(pady=5)
         ttk.Radiobutton(win, text="Dark", variable=self.theme, value="dark", command=self.apply_theme).pack(pady=5)
 
+        ttk.Label(win, text="Language", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Radiobutton(win, text="English", variable=self.language, value="eng").pack(pady=5)
+        ttk.Radiobutton(win, text="Italiano", variable=self.language, value="it").pack(pady=5)
+
         def save_and_close():
             new_settings = {
                 **self.settings,
@@ -321,6 +326,7 @@ class PromptPackApp:
                 "include_heading": self.include_heading.get(),
                 "use_code_block": self.use_code_block.get(),
                 "theme": self.theme.get(),
+                "language": self.language.get(),
                 "max_tokens": preset_limits.get(self.max_tokens_choice.get(), self.custom_max_tokens.get()),
             }
             save_settings(new_settings)
@@ -612,7 +618,10 @@ class PromptPackApp:
         lines = []
         project_name = Path(start_folder).name
         date_str = datetime.now().strftime('%Y%m%d')
-        header = f"Project: {project_name} - {date_str}\n"
+        if self.settings.get("language", "eng") == "it":
+            header = f"Progetto: {project_name} - {date_str}\n"
+        else:
+            header = f"Project: {project_name} - {date_str}\n"
         lines.append(header)
         token_count = estimate_token_count(header)
         max_tokens = self.settings.get("max_tokens", 200000)
