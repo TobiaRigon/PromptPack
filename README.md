@@ -6,16 +6,19 @@
 
 - GUI for selecting a source folder and choosing which files to include
 - Treeview interface with checkboxes for including/excluding individual files
+- Lazy loading of large folders keeps the interface responsive
 - Live preview window to see the generated output before exporting
 - Default filters for file extensions and folders (e.g., skip `.env`, `node_modules`, `.git`, etc.)
 - Saves and loads user settings to/from a JSON file
 - Choose export format (TXT, Markdown or JSON) and optionally include code blocks and headings
+- Export also to HTML or PDF with the same styling as the browser preview
 - Optionally export only the file tree without contents
 - Switch between dark and light mode, with buttons and fields adopting dark colors when the theme is set to "dark"
 - Files listed in a `.gitignore` file are automatically deselected
 - Passwords and API keys in the output are masked for safety
 - Exports larger than the chosen token limit are automatically split into multiple files
 - Select a token limit preset (ChatGPT, Gemini, Claude) or set a custom value
+- Live preview is skipped for files bigger than the configured size
 - Token counting usa i tokenizer ufficiali (tiktoken, anthropic, Google) quando disponibili
 - Scegli la lingua dell'interfaccia tramite un menu a discesa: le opzioni vengono rilevate automaticamente dai file JSON in `promptpack/locales`
 - Le stringhe tradotte sono raccolte in file JSON dentro `promptpack/locales` per facilitare l'aggiunta di nuove lingue
@@ -59,7 +62,7 @@ The file `promptpack.py` simply launches the application.
 2. **Select Files**: Opens an expandable tree of all folders and files. You can include/exclude each item via checkboxes.
    - Default selections are based on the current settings.
 3. **Settings**: Define default allowed extensions, excluded folders and files. Also choose:
-   - Export format (txt, md, json)
+   - Export format (txt, md, html, pdf, json)
    - Include file headings
    - Use code blocks for each file (Markdown only)
    - Export only the file tree
@@ -81,6 +84,7 @@ User preferences are saved in a file named `promptpack_settings.json` in the sam
   "tree_only": false,
   "include_heading": true,
   "use_code_block": true,
+  "preview_size_limit": 1000000,
   "max_tokens": 200000,
   "last_start_folder": "",
   "last_selected_files": []
@@ -138,7 +142,7 @@ python -m promptpack.cli ./input ./out --no-heading --no-code-block
 | ----------------- | ------------------------------------------------------------------- |
 | `source`          | Source folder to analyze                                            |
 | `dest`            | Destination folder for the generated output                         |
-| `--format`        | Export format: `txt`, `md`, `json`                                  |
+| `--format`        | Export format: `txt`, `md`, `html`, `pdf`, `json`                                  |
 | `--tree-only`     | Export only the folder structure, without file contents             |
 | `--no-heading`    | Do not include headings for each file                               |
 | `--no-code-block` | Do not wrap contents in code blocks (Markdown only)                 |

@@ -95,6 +95,8 @@ def configure_settings(app):
     ttk.Label(scrollable, text=app.t("export_format")).pack(pady=(5, 0))
     ttk.Radiobutton(scrollable, text="TXT", variable=app.export_format, value="txt").pack(pady=2)
     ttk.Radiobutton(scrollable, text="Markdown", variable=app.export_format, value="md").pack(pady=2)
+    ttk.Radiobutton(scrollable, text="HTML", variable=app.export_format, value="html").pack(pady=2)
+    ttk.Radiobutton(scrollable, text="PDF", variable=app.export_format, value="pdf").pack(pady=2)
     ttk.Radiobutton(scrollable, text="JSON", variable=app.export_format, value="json").pack(pady=2)
     ttk.Checkbutton(scrollable, text=app.t("include_headings"), variable=app.include_heading).pack(pady=5)
     ttk.Checkbutton(scrollable, text=app.t("use_code"), variable=app.use_code_block).pack(pady=5)
@@ -142,7 +144,12 @@ def configure_settings(app):
 
     ttk.Label(scrollable, text=app.t("language"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
     language_options = available_languages()
-    ttk.OptionMenu(scrollable, app.language, app.language.get(), *language_options, command=lambda *_: None).pack(pady=5)
+
+    def on_language_change(*_):
+        app.load_translations()
+        app.update_texts()
+
+    ttk.OptionMenu(scrollable, app.language, app.language.get(), *language_options, command=on_language_change).pack(pady=5)
 
     def save_and_close():
         new_settings = {

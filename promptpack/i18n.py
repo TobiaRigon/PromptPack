@@ -13,14 +13,23 @@ _cache: dict[str, dict[str, str]] = {}
 def load_translations(lang: str) -> dict[str, str]:
     """Carica le stringhe localizzate dal file corrispondente."""
     if lang not in _cache:
-        path = LOCALES_DIR / f"{lang}.json"
-        if not path.exists():
-            path = LOCALES_DIR / "eng.json"
+        # Always start from English strings as fallback
+        data: dict[str, str] = {}
         try:
-            with path.open("r", encoding="utf-8") as f:
-                _cache[lang] = json.load(f)
+            with (LOCALES_DIR / "eng.json").open("r", encoding="utf-8") as f:
+                data = json.load(f)
         except Exception:
-            _cache[lang] = {}
+            data = {}
+
+        if lang != "eng":
+            path = LOCALES_DIR / f"{lang}.json"
+            if path.exists():
+                try:
+                    with path.open("r", encoding="utf-8") as f:
+                        data.update(json.load(f))
+                except Exception:
+                    pass
+        _cache[lang] = data
     return _cache[lang]
 
 

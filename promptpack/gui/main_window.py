@@ -293,6 +293,7 @@ class PromptPackApp:
                     self.use_code_block.get(),
                     self.settings.get("max_tokens", 200000),
                     progress_callback=callback,
+                    theme=self.theme.get(),
                 )
                 msg = "\n".join(str(p) for p in output_paths)
                 self.root.after(0, lambda: [self.hide_progress(), messagebox.showinfo(self.t("done"), self.t("files_generated", msg=msg))])

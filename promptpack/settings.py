@@ -18,6 +18,8 @@ DEFAULT_SETTINGS = {
     "token_model": "gpt",
     # Maximum tokens per preview or export file
     "max_tokens": 200_000,
+    # Disable live preview for files bigger than this size (bytes)
+    "preview_size_limit": 1_000_000,
     # Remember last source folder and selected files
     "last_start_folder": "",
     "last_selected_files": [],
@@ -42,6 +44,8 @@ def load_settings():
                     data["language"] = DEFAULT_SETTINGS["language"]
                 if "token_model" not in data:
                     data["token_model"] = DEFAULT_SETTINGS["token_model"]
+                if "preview_size_limit" not in data:
+                    data["preview_size_limit"] = DEFAULT_SETTINGS["preview_size_limit"]
                 return {**DEFAULT_SETTINGS, **data}
         except Exception:
             return DEFAULT_SETTINGS.copy()
