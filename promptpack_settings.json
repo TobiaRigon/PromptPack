@@ -24,6 +24,6 @@
     "language": "eng",
     "token_model": "gpt",
     "max_tokens": 200000,
-    "last_start_folder": "",
+    "last_start_folder": "C:/Users/tobia.rigon/Desktop/vaadin-debug",
     "last_selected_files": []
 }

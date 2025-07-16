@@ -5,6 +5,7 @@ from tempfile import NamedTemporaryFile
 import webbrowser
 import tkinter as tk
 from tkinter import Toplevel, messagebox, ttk
+from datetime import datetime
 
 from ..utils import apply_icon, sanitize_sensitive_data, LANG_MAP, estimate_token_count
 

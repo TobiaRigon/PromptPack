@@ -21,12 +21,13 @@ from .preview import (
     compute_token_count,
     get_preview_text,
     generate_preview_lines,
+        toggle_preview_window,
+
 )
 from .file_selector import (
     select_files,
     is_valid,
     update_default_selected_files,
-    toggle_preview_window,
 )
 from .settings_dialog import configure_settings, ListDialog
 
