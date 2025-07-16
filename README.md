@@ -17,7 +17,7 @@
 - Exports larger than the chosen token limit are automatically split into multiple files
 - Select a token limit preset (ChatGPT, Gemini, Claude) or set a custom value
 - Token counting usa i tokenizer ufficiali (tiktoken, anthropic, Google) quando disponibili
-- Scegli la lingua dell'interfaccia (eng o it) dalle impostazioni
+- Scegli la lingua dell'interfaccia (eng o it) dalle impostazioni tramite un menu a discesa
 - Copy the preview to the clipboard with one click
 - Select or deselect all files at once when choosing what to include
 - Remaining token counter shows usage versus limit

@@ -10,6 +10,112 @@ from .settings import load_settings, save_settings
 from pathspec import PathSpec
 from .utils import apply_icon, estimate_token_count, LANG_MAP, generate_output, sanitize_sensitive_data
 
+TRANSLATIONS = {
+    "eng": {
+        "source": "Source",
+        "source_folder": "Source Folder",
+        "browse": "Browse",
+        "select_files": "Select Files",
+        "preview": "Preview",
+        "copy": "Copy to Clipboard",
+        "browser": "Preview in browser",
+        "live_preview": "Live Preview",
+        "output": "Output",
+        "dest_folder": "Destination Folder",
+        "generate": "Generate",
+        "settings": "\u2699\ufe0f Settings",
+        "settings_title": "Settings",
+        "default_selection": "Default Selection",
+        "allowed_exts": "Default Allowed Extensions",
+        "excluded_dirs": "Default Excluded Directories",
+        "excluded_files": "Default Excluded Files",
+        "output_opts": "Output Options",
+        "export_format": "Export format:",
+        "include_headings": "Include File Headings",
+        "use_code": "Use Code Blocks",
+        "tree_only": "Tree only",
+        "token_limit": "Token limit",
+        "theme": "Theme",
+        "light": "Light",
+        "dark": "Dark",
+        "language": "Language",
+        "english": "English",
+        "italian": "Italiano",
+        "save": "Save",
+        "select_files_title": "Select Files to Include",
+        "select_deselect": "Select/Deselect All",
+        "confirm": "Confirm Selection",
+        "no_files": "No Files",
+        "no_preview": "No files selected for preview.",
+        "copied": "Copied",
+        "content_copied": "Content copied to clipboard",
+        "preview_copied": "Preview copied to clipboard",
+        "error": "Error",
+        "select_source_first": "Please select the source folder first",
+        "limit_reached": "Limit reached",
+        "limit_msg": "Reached the limit of {max} tokens. Some files were skipped.",
+        "done": "Done",
+        "files_generated": "Files generated:\n{msg}",
+        "no_selected": "No files selected",
+        "need_folders": "Please select both source and destination folders",
+        "token_header": "Token estimate: {count} (remaining {remaining})\n{sep}\n",
+        "tokens": "Tokens: {tokens} / {max}",
+        "project_label": "Project: {name} - {date}",
+    },
+    "it": {
+        "source": "Origine",
+        "source_folder": "Cartella sorgente",
+        "browse": "Sfoglia",
+        "select_files": "Seleziona file",
+        "preview": "Anteprima",
+        "copy": "Copia negli appunti",
+        "browser": "Anteprima nel browser",
+        "live_preview": "Anteprima live",
+        "output": "Output",
+        "dest_folder": "Cartella di destinazione",
+        "generate": "Genera",
+        "settings": "\u2699\ufe0f Impostazioni",
+        "settings_title": "Impostazioni",
+        "default_selection": "Selezione predefinita",
+        "allowed_exts": "Estensioni consentite predefinite",
+        "excluded_dirs": "Cartelle escluse predefinite",
+        "excluded_files": "File esclusi predefiniti",
+        "output_opts": "Opzioni di output",
+        "export_format": "Formato di esportazione:",
+        "include_headings": "Includi intestazioni dei file",
+        "use_code": "Usa blocchi di codice",
+        "tree_only": "Solo struttura",
+        "token_limit": "Limite token",
+        "theme": "Tema",
+        "light": "Chiaro",
+        "dark": "Scuro",
+        "language": "Lingua",
+        "english": "Inglese",
+        "italian": "Italiano",
+        "save": "Salva",
+        "select_files_title": "Seleziona i file da includere",
+        "select_deselect": "Seleziona/Deseleziona tutto",
+        "confirm": "Conferma selezione",
+        "no_files": "Nessun file",
+        "no_preview": "Nessun file selezionato per l'anteprima.",
+        "copied": "Copiato",
+        "content_copied": "Contenuto copiato negli appunti",
+        "preview_copied": "Anteprima copiata negli appunti",
+        "error": "Errore",
+        "select_source_first": "Seleziona prima la cartella sorgente",
+        "limit_reached": "Limite raggiunto",
+        "limit_msg": "Raggiunto il limite di {max} token. Alcuni file sono stati saltati.",
+        "done": "Fatto",
+        "files_generated": "File generati:\n{msg}",
+        "no_selected": "Nessun file selezionato",
+        "need_folders": "Seleziona sia la cartella sorgente che quella di destinazione",
+        "token_header": "Stima token: {count} (restano {remaining})\n{sep}\n",
+        "tokens": "Token: {tokens} / {max}",
+        "project_label": "Progetto: {name} - {date}",
+    },
+}
+
+
 
 class ListDialog(simpledialog.Dialog):
     """Simple entry dialog that supports a custom window icon."""
@@ -32,6 +138,11 @@ class ListDialog(simpledialog.Dialog):
 
 
 class PromptPackApp:
+    def t(self, key: str, **kwargs) -> str:
+        lang = self.language.get()
+        template = TRANSLATIONS.get(lang, TRANSLATIONS["eng"]).get(key, key)
+        return template.format(**kwargs)
+
     def __init__(self, root: tk.Tk):
         self.root = root
         root.title("PromptPack")
@@ -60,6 +171,7 @@ class PromptPackApp:
         style.configure("Heading.TLabel", font=("TkDefaultFont", 15, "bold"))
 
         self.build_gui()
+        self.update_texts()
 
         folder = self.start_folder.get()
         if folder:
@@ -85,64 +197,80 @@ class PromptPackApp:
         }
 
         # Source section
-        ttk.Label(self.root, text="Source", **heading_opts)\
-            .grid(row=0, column=1, sticky="ew", padx=10, pady=(20, 5))
+        self.source_heading = ttk.Label(self.root, text=self.t("source"), **heading_opts)
+        self.source_heading.grid(row=0, column=1, sticky="ew", padx=10, pady=(20, 5))
 
-        ttk.Label(self.root, text="Source Folder")\
-            .grid(row=1, column=0, sticky="w", padx=10, pady=5)
+        self.source_label = ttk.Label(self.root, text=self.t("source_folder"))
+        self.source_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
 
         entry = ttk.Entry(self.root, textvariable=self.start_folder, width=50)
         entry.grid(row=1, column=1, padx=5, pady=5)
 
-        ttk.Button(self.root, text="Browse", command=self.browse_start)\
-            .grid(row=1, column=2, padx=5, pady=5)
+        self.browse_start_btn = ttk.Button(self.root, text=self.t("browse"), command=self.browse_start)
+        self.browse_start_btn.grid(row=1, column=2, padx=5, pady=5)
 
-        ttk.Button(self.root, text="Select Files", command=self.select_files)\
-            .grid(row=2, column=1, pady=5)
+        self.select_files_btn = ttk.Button(self.root, text=self.t("select_files"), command=self.select_files)
+        self.select_files_btn.grid(row=2, column=1, pady=5)
 
         # Preview section
-        ttk.Label(self.root, text="Preview", **heading_opts)\
-            .grid(row=3, column=1, sticky="ew", padx=10, pady=(20, 5))
+        self.preview_heading = ttk.Label(self.root, text=self.t("preview"), **heading_opts)
+        self.preview_heading.grid(row=3, column=1, sticky="ew", padx=10, pady=(20, 5))
 
-        ttk.Button(self.root, text="Copy to Clipboard", command=self.copy_preview)\
-            .grid(row=4, column=0, pady=5)
+        self.copy_btn = ttk.Button(self.root, text=self.t("copy"), command=self.copy_preview)
+        self.copy_btn.grid(row=4, column=0, pady=5)
 
-        ttk.Button(self.root, text="Preview in browser", command=self.preview_in_browser)\
-            .grid(row=4, column=1, pady=5)
+        self.browser_btn = ttk.Button(self.root, text=self.t("browser"), command=self.preview_in_browser)
+        self.browser_btn.grid(row=4, column=1, pady=5)
 
-        ttk.Checkbutton(
+        self.live_preview_cb = ttk.Checkbutton(
             self.root,
-            text="Live Preview",
+            text=self.t("live_preview"),
             variable=self.enable_preview,
             command=self.toggle_preview_window,
-        ).grid(row=4, column=2, sticky="w", padx=5)
+        )
+        self.live_preview_cb.grid(row=4, column=2, sticky="w", padx=5)
 
         # Output section
-        ttk.Label(self.root, text="Output", **heading_opts)\
-            .grid(row=5, column=1, sticky="ew", padx=10, pady=(20, 5))
+        self.output_heading = ttk.Label(self.root, text=self.t("output"), **heading_opts)
+        self.output_heading.grid(row=5, column=1, sticky="ew", padx=10, pady=(20, 5))
 
-        ttk.Label(self.root, text="Destination Folder")\
-            .grid(row=6, column=0, sticky="w", padx=10, pady=5)
+        self.dest_label = ttk.Label(self.root, text=self.t("dest_folder"))
+        self.dest_label.grid(row=6, column=0, sticky="w", padx=10, pady=5)
 
         ttk.Entry(self.root, textvariable=self.dest_folder, width=50)\
             .grid(row=6, column=1, padx=5, pady=5)
 
-        ttk.Button(self.root, text="Browse", command=self.browse_dest)\
-            .grid(row=6, column=2, padx=5, pady=5)
+        self.browse_dest_btn = ttk.Button(self.root, text=self.t("browse"), command=self.browse_dest)
+        self.browse_dest_btn.grid(row=6, column=2, padx=5, pady=5)
 
-        ttk.Button(self.root, text="Generate", command=self.generate)\
-            .grid(row=7, column=1, pady=10)
+        self.generate_btn = ttk.Button(self.root, text=self.t("generate"), command=self.generate)
+        self.generate_btn.grid(row=7, column=1, pady=10)
 
         # Settings gear button
-        gear_button = ttk.Button(
+        self.gear_button = ttk.Button(
             self.root,
-            text="⚙️ Settings",
+            text=self.t("settings"),
             command=self.configure_settings,
             style="Gear.TButton"
         )
-        gear_button.grid(row=8, column=2, sticky="e", pady=5, padx=5)
-        gear_button.bind("<Enter>", lambda e: gear_button.config(cursor="hand2"))
-        gear_button.bind("<Leave>", lambda e: gear_button.config(cursor=""))
+        self.gear_button.grid(row=8, column=2, sticky="e", pady=5, padx=5)
+        self.gear_button.bind("<Enter>", lambda e: self.gear_button.config(cursor="hand2"))
+        self.gear_button.bind("<Leave>", lambda e: self.gear_button.config(cursor=""))
+
+    def update_texts(self):
+        self.source_heading.config(text=self.t("source"))
+        self.source_label.config(text=self.t("source_folder"))
+        self.browse_start_btn.config(text=self.t("browse"))
+        self.select_files_btn.config(text=self.t("select_files"))
+        self.preview_heading.config(text=self.t("preview"))
+        self.copy_btn.config(text=self.t("copy"))
+        self.browser_btn.config(text=self.t("browser"))
+        self.live_preview_cb.config(text=self.t("live_preview"))
+        self.output_heading.config(text=self.t("output"))
+        self.dest_label.config(text=self.t("dest_folder"))
+        self.browse_dest_btn.config(text=self.t("browse"))
+        self.generate_btn.config(text=self.t("generate"))
+        self.gear_button.config(text=self.t("settings"))
 
 
 
@@ -246,7 +374,7 @@ class PromptPackApp:
 
     def configure_settings(self):
         win = Toplevel(self.root)
-        win.title("Settings")
+        win.title(self.t("settings_title"))
         apply_icon(win)
         win.geometry("500x500")
 
@@ -259,21 +387,21 @@ class PromptPackApp:
             result = dlg.result
             if result is not None:
                 self.settings[key] = [x.strip() for x in result.split(",") if x.strip()]
-        ttk.Label(win, text="Default Selection", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Button(win, text="Default Allowed Extensions", command=lambda: prompt_list("Default Allowed Extensions", "allowed_exts")).pack(pady=5)
-        ttk.Button(win, text="Default Excluded Directories", command=lambda: prompt_list("Default Excluded Directories", "excluded_dirs")).pack(pady=5)
-        ttk.Button(win, text="Default Excluded Files", command=lambda: prompt_list("Default Excluded Files", "excluded_files")).pack(pady=5)
+        ttk.Label(win, text=self.t("default_selection"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Button(win, text=self.t("allowed_exts"), command=lambda: prompt_list(self.t("allowed_exts"), "allowed_exts")).pack(pady=5)
+        ttk.Button(win, text=self.t("excluded_dirs"), command=lambda: prompt_list(self.t("excluded_dirs"), "excluded_dirs")).pack(pady=5)
+        ttk.Button(win, text=self.t("excluded_files"), command=lambda: prompt_list(self.t("excluded_files"), "excluded_files")).pack(pady=5)
 
-        ttk.Label(win, text="Output Options", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Label(win, text="Export format:").pack(pady=(5, 0))
+        ttk.Label(win, text=self.t("output_opts"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Label(win, text=self.t("export_format")).pack(pady=(5, 0))
         ttk.Radiobutton(win, text="TXT", variable=self.export_format, value="txt").pack(pady=2)
         ttk.Radiobutton(win, text="Markdown", variable=self.export_format, value="md").pack(pady=2)
         ttk.Radiobutton(win, text="JSON", variable=self.export_format, value="json").pack(pady=2)
-        ttk.Checkbutton(win, text="Include File Headings", variable=self.include_heading).pack(pady=5)
-        ttk.Checkbutton(win, text="Use Code Blocks", variable=self.use_code_block).pack(pady=5)
-        ttk.Checkbutton(win, text="Tree only", variable=self.tree_only).pack(pady=5)
+        ttk.Checkbutton(win, text=self.t("include_headings"), variable=self.include_heading).pack(pady=5)
+        ttk.Checkbutton(win, text=self.t("use_code"), variable=self.use_code_block).pack(pady=5)
+        ttk.Checkbutton(win, text=self.t("tree_only"), variable=self.tree_only).pack(pady=5)
 
-        ttk.Label(win, text="Token limit", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Label(win, text=self.t("token_limit"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
         preset_limits = {
             "ChatGPT (16k)": 16000,
             "Gemini (32k)": 32000,
@@ -310,13 +438,13 @@ class PromptPackApp:
                 token_entry.pack_forget()
 
 
-        ttk.Label(win, text="Theme", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Radiobutton(win, text="Light", variable=self.theme, value="light", command=self.apply_theme).pack(pady=5)
-        ttk.Radiobutton(win, text="Dark", variable=self.theme, value="dark", command=self.apply_theme).pack(pady=5)
+        ttk.Label(win, text=self.t("theme"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        ttk.Radiobutton(win, text=self.t("light"), variable=self.theme, value="light", command=self.apply_theme).pack(pady=5)
+        ttk.Radiobutton(win, text=self.t("dark"), variable=self.theme, value="dark", command=self.apply_theme).pack(pady=5)
 
-        ttk.Label(win, text="Language", style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        ttk.Radiobutton(win, text="English", variable=self.language, value="eng").pack(pady=5)
-        ttk.Radiobutton(win, text="Italiano", variable=self.language, value="it").pack(pady=5)
+        ttk.Label(win, text=self.t("language"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
+        language_options = ["eng", "it"]
+        ttk.OptionMenu(win, self.language, self.language.get(), *language_options, command=lambda *_: None).pack(pady=5)
 
         def save_and_close():
             new_settings = {
@@ -332,9 +460,10 @@ class PromptPackApp:
             save_settings(new_settings)
             self.settings = new_settings
             self.apply_theme()
+            self.update_texts()
             win.destroy()
 
-        ttk.Button(win, text="Save", command=save_and_close).pack(pady=10)
+        ttk.Button(win, text=self.t("save"), command=save_and_close).pack(pady=10)
 
     def is_valid(self, f: Path) -> bool:
         return f.suffix in self.settings["allowed_exts"] and f.name not in self.settings["excluded_files"]
@@ -363,13 +492,13 @@ class PromptPackApp:
             preview_text = self.get_preview_text(self.selected_files)
             if self.preview_window is None or not self.preview_window.winfo_exists():
                 self.preview_window = Toplevel(self.root)
-                self.preview_window.title("Preview")
+                self.preview_window.title(self.t("preview"))
                 apply_icon(self.preview_window)
                 self.preview_text = tk.Text(self.preview_window, wrap="word")
                 self.preview_text.pack(fill="both", expand=True)
                 ttk.Button(
                     self.preview_window,
-                    text="Copy to Clipboard",
+                    text=self.t("copy"),
                     command=lambda: self.copy_text_widget(self.preview_text),
                 ).pack(pady=5)
                 self.apply_theme()
@@ -382,7 +511,7 @@ class PromptPackApp:
 
     def preview_in_browser(self):
         if not self.selected_files:
-            messagebox.showwarning("No Files", "No files selected for preview.")
+            messagebox.showwarning(self.t("no_files"), self.t("no_preview"))
             return
         markdown_text = self.get_preview_text(self.selected_files)
         html_body = markdown.markdown(markdown_text, extensions=['fenced_code', 'codehilite'])
@@ -451,26 +580,26 @@ class PromptPackApp:
         self.root.clipboard_clear()
         self.root.clipboard_append(text)
         self.root.update()
-        messagebox.showinfo("Copied", "Content copied to clipboard")
+        messagebox.showinfo(self.t("copied"), self.t("content_copied"))
 
     def copy_preview(self):
         if not self.selected_files:
-            messagebox.showwarning("No Files", "No files selected for preview.")
+            messagebox.showwarning(self.t("no_files"), self.t("no_preview"))
             return
         text = self.get_preview_text(self.selected_files)
         self.root.clipboard_clear()
         self.root.clipboard_append(text)
         self.root.update()
-        messagebox.showinfo("Copied", "Preview copied to clipboard")
+        messagebox.showinfo(self.t("copied"), self.t("preview_copied"))
 
     def select_files(self):
         folder = self.start_folder.get()
         if not folder:
-            messagebox.showerror("Error", "Please select the source folder first")
+            messagebox.showerror(self.t("error"), self.t("select_source_first"))
             return
 
         selector = Toplevel(self.root)
-        selector.title("Select Files to Include")
+        selector.title(self.t("select_files_title"))
         apply_icon(selector)
         selector.geometry("850x500")
         palette = {
@@ -513,7 +642,7 @@ class PromptPackApp:
         def update_token_label():
             tokens = self.compute_token_count({Path(p) for p, var in checkbox_vars.items() if var.get()})
             max_tokens = self.settings.get("max_tokens", 200000)
-            token_label.config(text=f"Tokens: {tokens} / {max_tokens}")
+            token_label.config(text=self.t("tokens", tokens=tokens, max=max_tokens))
 
         def insert_items(parent, path: Path):
             for p in sorted(path.iterdir()):
@@ -543,7 +672,7 @@ class PromptPackApp:
                 preview_text = self.get_preview_text({Path(p) for p, var in checkbox_vars.items() if var.get()})
                 if self.preview_window is None or not self.preview_window.winfo_exists():
                     self.preview_window = Toplevel(self.root)
-                    self.preview_window.title("Preview")
+                    self.preview_window.title(self.t("preview"))
                     apply_icon(self.preview_window)
                     self.preview_text = tk.Text(self.preview_window, wrap="word")
                     self.preview_text.pack(fill="both", expand=True)
@@ -580,7 +709,7 @@ class PromptPackApp:
             update_preview_live()
             update_token_label()
 
-        ttk.Button(selector, text="Select/Deselect All", command=toggle_all).pack(pady=5)
+        ttk.Button(selector, text=self.t("select_deselect"), command=toggle_all).pack(pady=5)
 
         def confirm_selection():
             self.selected_files = {Path(p) for p, var in checkbox_vars.items() if var.get()}
@@ -596,7 +725,7 @@ class PromptPackApp:
 
         ttk.Button(
             selector,
-            text="Confirm Selection",
+            text=self.t("confirm"),
             command=confirm_selection,
         ).pack(pady=5)
 
@@ -611,17 +740,14 @@ class PromptPackApp:
         token_count = estimate_token_count(full_text)
         max_tokens = self.settings.get("max_tokens", 200000)
         remaining = max_tokens - token_count
-        header = f"Token estimate: {token_count} (remaining {remaining})\n{'='*40}\n"
+        header = self.t("token_header", count=token_count, remaining=remaining, sep="="*40)
         return header + full_text
 
     def generate_preview_lines(self, start_folder, included_files):
         lines = []
         project_name = Path(start_folder).name
         date_str = datetime.now().strftime('%Y%m%d')
-        if self.settings.get("language", "eng") == "it":
-            header = f"Progetto: {project_name} - {date_str}\n"
-        else:
-            header = f"Project: {project_name} - {date_str}\n"
+        header = self.t("project_label", name=project_name, date=date_str) + "\n"
         lines.append(header)
         token_count = estimate_token_count(header)
         max_tokens = self.settings.get("max_tokens", 200000)
@@ -653,8 +779,8 @@ class PromptPackApp:
             tokens = estimate_token_count(text)
             if token_count + tokens > max_tokens:
                 messagebox.showwarning(
-                    "Limit reached",
-                    f"Reached the limit of {max_tokens} tokens. Some files were skipped.",
+                    self.t("limit_reached"),
+                    self.t("limit_msg", max=max_tokens),
                 )
                 break
             lines.extend(chunk)
@@ -663,10 +789,10 @@ class PromptPackApp:
 
     def generate(self):
         if not self.start_folder.get() or not self.dest_folder.get():
-            messagebox.showerror("Error", "Please select both source and destination folders")
+            messagebox.showerror(self.t("error"), self.t("need_folders"))
             return
         if not self.selected_files:
-            messagebox.showerror("Error", "No files selected")
+            messagebox.showerror(self.t("error"), self.t("no_selected"))
             return
         try:
             output_paths = generate_output(
@@ -680,6 +806,6 @@ class PromptPackApp:
                 self.settings.get("max_tokens", 200000),
             )
             msg = "\n".join(str(p) for p in output_paths)
-            messagebox.showinfo("Done", f"Files generated:\n{msg}")
+            messagebox.showinfo(self.t("done"), self.t("files_generated", msg=msg))
         except Exception as e:
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror(self.t("error"), str(e))
