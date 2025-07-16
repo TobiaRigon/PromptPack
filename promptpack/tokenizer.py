@@ -7,7 +7,7 @@ from .settings import load_settings
 try:
     import tiktoken  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
-    tiktoken = None
+    tiktoken = None  # fallback if tiktoken is missing
 
 try:
     from anthropic import Anthropic  # type: ignore
