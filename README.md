@@ -43,10 +43,10 @@
    python promptpack.py
    ```
 
- 
 ## Project Structure
 
 The source code is organized in the `promptpack` package:
+
 - `gui.py` contains the graphical interface.
 - `settings.py` manages the application settings.
 - `utils.py` includes supporting functions.
@@ -55,7 +55,7 @@ The file `promptpack.py` simply launches the application.
 
 ## How to Use
 
-1. **Start Folder**: Click *Browse* to select the folder containing the files you want to include.
+1. **Start Folder**: Click _Browse_ to select the folder containing the files you want to include.
 2. **Select Files**: Opens an expandable tree of all folders and files. You can include/exclude each item via checkboxes.
    - Default selections are based on the current settings.
 3. **Settings**: Define default allowed extensions, excluded folders and files. Also choose:
@@ -76,10 +76,10 @@ User preferences are saved in a file named `promptpack_settings.json` in the sam
 {
   "allowed_exts": [".php", ".js", ".ts", ".html", ".css", ".py"],
   "excluded_dirs": ["vendor", ".git", "node_modules"],
- "excluded_files": [".env", "README.md"],
- "export_format": "md",
- "tree_only": false,
- "include_heading": true,
+  "excluded_files": [".env", "README.md"],
+  "export_format": "md",
+  "tree_only": false,
+  "include_heading": true,
   "use_code_block": true,
   "max_tokens": 200000,
   "last_start_folder": "",
@@ -108,6 +108,84 @@ body {
 }
 ```
 ````
+
+````markdown
+## Command Line Usage (CLI)
+
+In addition to the graphical interface, **PromptPack** can be used from the command line to automate file exports. The CLI module is separate from the GUI and is executed using:
+
+```bash
+python -m promptpack.cli <source_folder> <destination_folder> [options]
+```
+````
+
+### Examples
+
+```bash
+# Export source files to Markdown with progress display
+python -m promptpack.cli ./src ./out --format md --progress
+
+# Export only the folder structure as JSON
+python -m promptpack.cli ./project ./out --tree-only --format json
+
+# Exclude headings and code blocks from the output
+python -m promptpack.cli ./input ./out --no-heading --no-code-block
+```
+
+### Available Options
+
+| Option            | Description                                                         |
+| ----------------- | ------------------------------------------------------------------- |
+| `source`          | Source folder to analyze                                            |
+| `dest`            | Destination folder for the generated output                         |
+| `--format`        | Export format: `txt`, `md`, `json`                                  |
+| `--tree-only`     | Export only the folder structure, without file contents             |
+| `--no-heading`    | Do not include headings for each file                               |
+| `--no-code-block` | Do not wrap contents in code blocks (Markdown only)                 |
+| `--max-tokens N`  | Maximum number of tokens allowed (default: 200000 or from settings) |
+| `--progress`      | Show a progress bar during file processing                          |
+
+### Notes
+
+- Absolute paths are supported (including on Windows).
+- The destination folder is automatically created if it does not exist.
+- Outputs are split into multiple parts if the token limit is exceeded.
+- CLI settings override the defaults from `promptpack_settings.json`.
+- Useful for scripting, automation, and batch workflows.
+
+### Integration Tip
+
+If you use PromptPack frequently, you can add an alias for convenience:
+
+**PowerShell (Windows):**
+
+```powershell
+Set-Alias promptpackcli "python -m promptpack.cli"
+```
+
+**Bash (Linux/macOS):**
+
+```bash
+alias promptpackcli='python -m promptpack.cli'
+```
+
+You can then run:
+
+```bash
+promptpackcli ./src ./out --format md --progress
+```
+
+Alternatively, use `pyinstaller` to generate a portable `.exe`:
+
+```bash
+pyinstaller --onefile promptpackcli.py
+```
+
+This creates `promptpackcli.exe` in the `dist/` folder, usable from any terminal without needing Python installed.
+
+```
+
+```
 
 ## Notes
 
