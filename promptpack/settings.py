@@ -14,6 +14,7 @@ DEFAULT_SETTINGS = {
     "include_heading": True,
     "use_code_block": True,
     "theme": "dark",
+    "language": "eng",
     # Maximum tokens per preview or export file
     "max_tokens": 200_000,
     # Remember last source folder and selected files
@@ -36,6 +37,8 @@ def load_settings():
                     data["last_start_folder"] = DEFAULT_SETTINGS["last_start_folder"]
                 if "last_selected_files" not in data:
                     data["last_selected_files"] = DEFAULT_SETTINGS["last_selected_files"]
+                if "language" not in data:
+                    data["language"] = DEFAULT_SETTINGS["language"]
                 return {**DEFAULT_SETTINGS, **data}
         except Exception:
             return DEFAULT_SETTINGS.copy()

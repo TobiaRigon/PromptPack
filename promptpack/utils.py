@@ -7,6 +7,8 @@ from tempfile import NamedTemporaryFile
 import webbrowser
 import markdown
 
+from .tokenizer import estimate_token_count
+
 LANG_MAP = {
     ".py": "python",
     ".js": "javascript",
@@ -14,6 +16,24 @@ LANG_MAP = {
     ".php": "php",
     ".html": "html",
     ".css": "css",
+    ".sh": "bash",
+    ".json": "json",
+    ".yml": "yaml",
+    ".yaml": "yaml",
+    ".java": "java",
+    ".c": "c",
+    ".cpp": "cpp",
+    ".h": "c",
+    ".cs": "csharp",
+    ".go": "go",
+    ".rs": "rust",
+    ".kt": "kotlin",
+    ".swift": "swift",
+    ".rb": "ruby",
+    ".md": "markdown",
+    ".txt": "",
+    ".it": "",
+    ".en": "",
 }
 
 
@@ -26,8 +46,6 @@ def apply_icon(window):
         print(f"Icon not loaded: {e}")
 
 
-def estimate_token_count(text: str) -> int:
-    return int(len(text) / 4)
 
 
 SENSITIVE_PATTERNS = [
