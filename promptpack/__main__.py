@@ -1,12 +1,13 @@
-import tkinter as tk
+from PySide6 import QtWidgets
 
-from promptpack import PromptPackApp
+from promptpack import PromptPackQtApp
 
 
 def main():
-    root = tk.Tk()
-    app = PromptPackApp(root)
-    root.mainloop()
+    app = QtWidgets.QApplication([])
+    window = PromptPackQtApp()
+    window.show()
+    app.exec()
 
 
 if __name__ == "__main__":
