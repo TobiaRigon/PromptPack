@@ -18,6 +18,7 @@
 - Select a token limit preset (ChatGPT, Gemini, Claude) or set a custom value
 - Token counting usa i tokenizer ufficiali (tiktoken, anthropic, Google) quando disponibili
 - Scegli la lingua dell'interfaccia (eng o it) dalle impostazioni tramite un menu a discesa
+- Le stringhe tradotte sono raccolte in file JSON dentro `promptpack/locales` per facilitare l'aggiunta di nuove lingue
 - Copy the preview to the clipboard with one click
 - Select or deselect all files at once when choosing what to include
 - Remaining token counter shows usage versus limit

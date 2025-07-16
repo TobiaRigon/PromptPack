@@ -9,111 +9,9 @@ import markdown
 from .settings import load_settings, save_settings
 from pathspec import PathSpec
 from .utils import apply_icon, estimate_token_count, LANG_MAP, generate_output, sanitize_sensitive_data
+from .i18n import load_translations
 
-TRANSLATIONS = {
-    "eng": {
-        "source": "Source",
-        "source_folder": "Source Folder",
-        "browse": "Browse",
-        "select_files": "Select Files",
-        "preview": "Preview",
-        "copy": "Copy to Clipboard",
-        "browser": "Preview in browser",
-        "live_preview": "Live Preview",
-        "output": "Output",
-        "dest_folder": "Destination Folder",
-        "generate": "Generate",
-        "settings": "\u2699\ufe0f Settings",
-        "settings_title": "Settings",
-        "default_selection": "Default Selection",
-        "allowed_exts": "Default Allowed Extensions",
-        "excluded_dirs": "Default Excluded Directories",
-        "excluded_files": "Default Excluded Files",
-        "output_opts": "Output Options",
-        "export_format": "Export format:",
-        "include_headings": "Include File Headings",
-        "use_code": "Use Code Blocks",
-        "tree_only": "Tree only",
-        "token_limit": "Token limit",
-        "theme": "Theme",
-        "light": "Light",
-        "dark": "Dark",
-        "language": "Language",
-        "english": "English",
-        "italian": "Italiano",
-        "save": "Save",
-        "select_files_title": "Select Files to Include",
-        "select_deselect": "Select/Deselect All",
-        "confirm": "Confirm Selection",
-        "no_files": "No Files",
-        "no_preview": "No files selected for preview.",
-        "copied": "Copied",
-        "content_copied": "Content copied to clipboard",
-        "preview_copied": "Preview copied to clipboard",
-        "error": "Error",
-        "select_source_first": "Please select the source folder first",
-        "limit_reached": "Limit reached",
-        "limit_msg": "Reached the limit of {max} tokens. Some files were skipped.",
-        "done": "Done",
-        "files_generated": "Files generated:\n{msg}",
-        "no_selected": "No files selected",
-        "need_folders": "Please select both source and destination folders",
-        "token_header": "Token estimate: {count} (remaining {remaining})\n{sep}\n",
-        "tokens": "Tokens: {tokens} / {max}",
-        "project_label": "Project: {name} - {date}",
-    },
-    "it": {
-        "source": "Origine",
-        "source_folder": "Cartella sorgente",
-        "browse": "Sfoglia",
-        "select_files": "Seleziona file",
-        "preview": "Anteprima",
-        "copy": "Copia negli appunti",
-        "browser": "Anteprima nel browser",
-        "live_preview": "Anteprima live",
-        "output": "Output",
-        "dest_folder": "Cartella di destinazione",
-        "generate": "Genera",
-        "settings": "\u2699\ufe0f Impostazioni",
-        "settings_title": "Impostazioni",
-        "default_selection": "Selezione predefinita",
-        "allowed_exts": "Estensioni consentite predefinite",
-        "excluded_dirs": "Cartelle escluse predefinite",
-        "excluded_files": "File esclusi predefiniti",
-        "output_opts": "Opzioni di output",
-        "export_format": "Formato di esportazione:",
-        "include_headings": "Includi intestazioni dei file",
-        "use_code": "Usa blocchi di codice",
-        "tree_only": "Solo struttura",
-        "token_limit": "Limite token",
-        "theme": "Tema",
-        "light": "Chiaro",
-        "dark": "Scuro",
-        "language": "Lingua",
-        "english": "Inglese",
-        "italian": "Italiano",
-        "save": "Salva",
-        "select_files_title": "Seleziona i file da includere",
-        "select_deselect": "Seleziona/Deseleziona tutto",
-        "confirm": "Conferma selezione",
-        "no_files": "Nessun file",
-        "no_preview": "Nessun file selezionato per l'anteprima.",
-        "copied": "Copiato",
-        "content_copied": "Contenuto copiato negli appunti",
-        "preview_copied": "Anteprima copiata negli appunti",
-        "error": "Errore",
-        "select_source_first": "Seleziona prima la cartella sorgente",
-        "limit_reached": "Limite raggiunto",
-        "limit_msg": "Raggiunto il limite di {max} token. Alcuni file sono stati saltati.",
-        "done": "Fatto",
-        "files_generated": "File generati:\n{msg}",
-        "no_selected": "Nessun file selezionato",
-        "need_folders": "Seleziona sia la cartella sorgente che quella di destinazione",
-        "token_header": "Stima token: {count} (restano {remaining})\n{sep}\n",
-        "tokens": "Token: {tokens} / {max}",
-        "project_label": "Progetto: {name} - {date}",
-    },
-}
+EN_TRANSLATIONS = load_translations("eng")
 
 
 
@@ -138,9 +36,11 @@ class ListDialog(simpledialog.Dialog):
 
 
 class PromptPackApp:
+    def load_translations(self):
+        self.translations = load_translations(self.language.get())
+
     def t(self, key: str, **kwargs) -> str:
-        lang = self.language.get()
-        template = TRANSLATIONS.get(lang, TRANSLATIONS["eng"]).get(key, key)
+        template = self.translations.get(key, EN_TRANSLATIONS.get(key, key))
         return template.format(**kwargs)
 
     def __init__(self, root: tk.Tk):
@@ -157,6 +57,7 @@ class PromptPackApp:
         self.use_code_block = tk.BooleanVar(value=self.settings["use_code_block"])
         self.theme = tk.StringVar(value=self.settings.get("theme", "dark"))
         self.language = tk.StringVar(value=self.settings.get("language", "eng"))
+        self.load_translations()
         self.enable_preview = tk.BooleanVar(value=False)
 
         self.start_folder = tk.StringVar(value=self.settings.get("last_start_folder", ""))
@@ -460,6 +361,7 @@ class PromptPackApp:
             save_settings(new_settings)
             self.settings = new_settings
             self.apply_theme()
+            self.load_translations()
             self.update_texts()
             win.destroy()
 
