@@ -228,7 +228,6 @@ def select_files(app):
         update_preview_live()
         update_token_label()
 
-    ttk.Button(selector, text=app.t("select_deselect"), command=toggle_all).pack(pady=5)
 
     def confirm_selection():
         app.selected_files = {Path(p) for p, var in checkbox_vars.items() if var.get()}
