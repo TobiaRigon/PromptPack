@@ -5,6 +5,7 @@ from datetime import datetime
 from tempfile import NamedTemporaryFile
 import webbrowser
 import markdown
+import threading
 
 from .settings import load_settings, save_settings
 from pathspec import PathSpec
@@ -92,6 +93,9 @@ class PromptPackApp:
 
         self.preview_window = None
         self.preview_text = None
+        self.progress_win = None
+        self.progress_bar = None
+        self.progress_var = tk.IntVar(value=0)
 
         style = ttk.Style(self.root)
         style.configure("Heading.TLabel", font=("TkDefaultFont", 15, "bold"))
@@ -281,6 +285,75 @@ class PromptPackApp:
             if self.preview_text:
                 self.preview_text.configure(bg=palette["background"], fg=palette["foreground"])
 
+    def show_progress(self, message: str, maximum: int | None = None):
+        if self.progress_win and self.progress_win.winfo_exists():
+            self.progress_win.destroy()
+        self.progress_win = Toplevel(self.root)
+        self.progress_win.title(message)
+        apply_icon(self.progress_win)
+        ttk.Label(self.progress_win, text=message).pack(padx=10, pady=10)
+        mode = "indeterminate" if maximum is None else "determinate"
+        self.progress_bar = ttk.Progressbar(
+            self.progress_win,
+            variable=self.progress_var,
+            maximum=maximum if maximum is not None else 100,
+            mode=mode,
+        )
+        self.progress_bar.pack(padx=10, pady=10)
+        if mode == "indeterminate":
+            self.progress_bar.start()
+        self.progress_win.transient(self.root)
+        self.progress_win.grab_set()
+
+    def update_progress(self, value: int, maximum: int):
+        if self.progress_bar and self.progress_bar["mode"] == "determinate":
+            self.progress_bar.config(maximum=maximum)
+            self.progress_var.set(value)
+            self.progress_bar.update_idletasks()
+
+    def hide_progress(self):
+        if self.progress_bar:
+            if self.progress_bar["mode"] == "indeterminate":
+                self.progress_bar.stop()
+        if self.progress_win and self.progress_win.winfo_exists():
+            self.progress_win.destroy()
+
+    def build_preview_async(self, files):
+        self.show_progress(self.t("preview"))
+
+        def worker():
+            text = self.get_preview_text(files)
+
+            def update():
+                if self.preview_window is None or not self.preview_window.winfo_exists():
+                    self.preview_window = Toplevel(self.root)
+                    self.preview_window.title(self.t("preview"))
+                    self.preview_window.resizable(True, True)
+                    apply_icon(self.preview_window)
+
+                    frame = ttk.Frame(self.preview_window)
+                    frame.pack(fill="both", expand=True)
+
+                    self.preview_text = tk.Text(frame, wrap="word")
+                    yscroll = ttk.Scrollbar(frame, command=self.preview_text.yview)
+                    self.preview_text.configure(yscrollcommand=yscroll.set)
+                    self.preview_text.pack(side="left", fill="both", expand=True)
+                    yscroll.pack(side="right", fill="y")
+
+                    ttk.Button(
+                        self.preview_window,
+                        text=self.t("copy"),
+                        command=lambda: self.copy_text_widget(self.preview_text),
+                    ).pack(pady=5)
+                    self.apply_theme()
+                self.preview_text.delete("1.0", "end")
+                self.preview_text.insert("1.0", text)
+                self.hide_progress()
+
+            self.root.after(0, update)
+
+        threading.Thread(target=worker, daemon=True).start()
+
     def browse_start(self):
         folder = filedialog.askdirectory()
         if folder:
@@ -431,30 +504,7 @@ class PromptPackApp:
 
     def toggle_preview_window(self):
         if self.enable_preview.get():
-            preview_text = self.get_preview_text(self.selected_files)
-            if self.preview_window is None or not self.preview_window.winfo_exists():
-                self.preview_window = Toplevel(self.root)
-                self.preview_window.title(self.t("preview"))
-                self.preview_window.resizable(True, True)
-                apply_icon(self.preview_window)
-
-                frame = ttk.Frame(self.preview_window)
-                frame.pack(fill="both", expand=True)
-
-                self.preview_text = tk.Text(frame, wrap="word")
-                yscroll = ttk.Scrollbar(frame, command=self.preview_text.yview)
-                self.preview_text.configure(yscrollcommand=yscroll.set)
-                self.preview_text.pack(side="left", fill="both", expand=True)
-                yscroll.pack(side="right", fill="y")
-
-                ttk.Button(
-                    self.preview_window,
-                    text=self.t("copy"),
-                    command=lambda: self.copy_text_widget(self.preview_text),
-                ).pack(pady=5)
-                self.apply_theme()
-            self.preview_text.delete("1.0", "end")
-            self.preview_text.insert("1.0", preview_text)
+            self.build_preview_async(self.selected_files)
         else:
             if self.preview_window and self.preview_window.winfo_exists():
                 self.preview_window.destroy()
@@ -632,24 +682,8 @@ class PromptPackApp:
 
         def update_preview_live():
             if self.enable_preview.get():
-                preview_text = self.get_preview_text({Path(p) for p, var in checkbox_vars.items() if var.get()})
-                if self.preview_window is None or not self.preview_window.winfo_exists():
-                    self.preview_window = Toplevel(self.root)
-                    self.preview_window.title(self.t("preview"))
-                    self.preview_window.resizable(True, True)
-                    apply_icon(self.preview_window)
-
-                    frame = ttk.Frame(self.preview_window)
-                    frame.pack(fill="both", expand=True)
-
-                    self.preview_text = tk.Text(frame, wrap="word")
-                    yscroll = ttk.Scrollbar(frame, command=self.preview_text.yview)
-                    self.preview_text.configure(yscrollcommand=yscroll.set)
-                    self.preview_text.pack(side="left", fill="both", expand=True)
-                    yscroll.pack(side="right", fill="y")
-                    self.apply_theme()
-                self.preview_text.delete("1.0", "end")
-                self.preview_text.insert("1.0", preview_text)
+                files = {Path(p) for p, var in checkbox_vars.items() if var.get()}
+                self.build_preview_async(files)
             update_token_label()
 
         def toggle_checkbox(event):
@@ -765,18 +799,28 @@ class PromptPackApp:
         if not self.selected_files:
             messagebox.showerror(self.t("error"), self.t("no_selected"))
             return
-        try:
-            output_paths = generate_output(
-                self.start_folder.get(),
-                self.dest_folder.get(),
-                list(self.selected_files),
-                self.export_format.get(),
-                self.tree_only.get(),
-                self.include_heading.get(),
-                self.use_code_block.get(),
-                self.settings.get("max_tokens", 200000),
-            )
-            msg = "\n".join(str(p) for p in output_paths)
-            messagebox.showinfo(self.t("done"), self.t("files_generated", msg=msg))
-        except Exception as e:
-            messagebox.showerror(self.t("error"), str(e))
+        total = len(self.selected_files)
+        self.show_progress(self.t("generate"), maximum=total)
+
+        def callback(current, maximum):
+            self.root.after(0, lambda: self.update_progress(current, maximum))
+
+        def worker():
+            try:
+                output_paths = generate_output(
+                    self.start_folder.get(),
+                    self.dest_folder.get(),
+                    list(self.selected_files),
+                    self.export_format.get(),
+                    self.tree_only.get(),
+                    self.include_heading.get(),
+                    self.use_code_block.get(),
+                    self.settings.get("max_tokens", 200000),
+                    progress_callback=callback,
+                )
+                msg = "\n".join(str(p) for p in output_paths)
+                self.root.after(0, lambda: [self.hide_progress(), messagebox.showinfo(self.t("done"), self.t("files_generated", msg=msg))])
+            except Exception as e:
+                self.root.after(0, lambda: [self.hide_progress(), messagebox.showerror(self.t("error"), str(e))])
+
+        threading.Thread(target=worker, daemon=True).start()

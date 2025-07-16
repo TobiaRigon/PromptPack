@@ -1,6 +1,6 @@
 import tkinter as tk
 
-from promptpack import PromptPackApp
+from .gui import PromptPackApp
 
 
 def main():

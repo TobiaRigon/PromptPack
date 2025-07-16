@@ -5,7 +5,6 @@ from pathlib import Path
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 import webbrowser
-import markdown
 
 from .tokenizer import estimate_token_count
 
@@ -76,6 +75,7 @@ def generate_output(
     include_heading: bool,
     use_code_block: bool,
     max_tokens: int = 200000,
+    progress_callback=None,
 ):
     """Export selected files in the chosen format.
 
@@ -111,6 +111,8 @@ def generate_output(
         part += 1
         return output_file
 
+    total_files = len(included_files)
+    processed = 0
     for path in included_files:
         rel_path = path.relative_to(start_folder)
         if tree_only:
@@ -132,6 +134,9 @@ def generate_output(
                     lines = [header]
                 lines.append(line)
                 token_count += block_tokens
+            processed += 1
+            if progress_callback:
+                progress_callback(processed, total_files)
             continue
 
         try:
@@ -165,6 +170,10 @@ def generate_output(
                 lines = [header]
             lines.append(block)
             token_count += block_tokens
+
+        processed += 1
+        if progress_callback:
+            progress_callback(processed, total_files)
 
     output_files.append(_flush())
     return output_files
