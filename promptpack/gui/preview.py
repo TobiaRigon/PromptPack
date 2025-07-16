@@ -171,7 +171,10 @@ def generate_preview_lines(app, start_folder, included_files, warn_on_limit=True
     for path in sorted(included_files):
         rel_path = path.relative_to(start_folder)
         if app.tree_only.get():
-            line = f"{rel_path.as_posix()}\n"
+            if app.export_format.get() == "html":
+                line = f"<p>{rel_path.as_posix()}</p>\n"
+            else:
+                line = f"{rel_path.as_posix()}\n"
             tokens = estimate_token_count(line)
             if token_count + tokens > max_tokens:
                 break
@@ -185,10 +188,19 @@ def generate_preview_lines(app, start_folder, included_files, warn_on_limit=True
         content = sanitize_sensitive_data(content)
         chunk = []
         if app.include_heading.get():
-            chunk.append(f"## {rel_path.as_posix()}\n")
+            if app.export_format.get() == "html":
+                chunk.append(f"<h2>{rel_path.as_posix()}</h2>\n")
+            else:
+                chunk.append(f"## {rel_path.as_posix()}\n")
         if app.export_format.get() == "md" and app.use_code_block.get():
             lang = LANG_MAP.get(path.suffix, '')
             chunk.append(f"```{lang}\n{content}\n```\n")
+        elif app.export_format.get() == "html":
+            if app.use_code_block.get():
+                lang = LANG_MAP.get(path.suffix, '')
+                chunk.append(f"<pre><code class='language-{lang}'>" + content + "</code></pre>\n")
+            else:
+                chunk.append(f"<pre>{content}</pre>\n")
         else:
             chunk.append(f"{content}\n")
         text = ''.join(chunk)

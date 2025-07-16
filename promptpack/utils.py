@@ -93,6 +93,10 @@ def generate_output(
         lines = []
         header = ""
         token_count = 0
+    elif export_format == "html":
+        lines = [f"<h1>Project: {project_name} - {date_str}</h1>\n"]
+        header = ""
+        token_count = estimate_token_count(project_name)
     else:
         lines = []
         header = f"Project: {project_name} - {date_str}\n\n"
@@ -104,6 +108,22 @@ def generate_output(
         if export_format == "json":
             output_file = Path(dest_folder) / f"{project_name}-{date_str}-part{part}.json"
             output_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        elif export_format == "html":
+            output_file = Path(dest_folder) / f"{project_name}-{date_str}-part{part}.html"
+            html = "<html><body>" + "".join(lines) + "</body></html>"
+            output_file.write_text(html, encoding="utf-8")
+        elif export_format == "pdf":
+            try:
+                from fpdf import FPDF
+            except ImportError as exc:
+                raise RuntimeError("fpdf library required for PDF export") from exc
+            output_file = Path(dest_folder) / f"{project_name}-{date_str}-part{part}.pdf"
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Courier", size=12)
+            for line in lines:
+                pdf.multi_cell(0, 10, line)
+            pdf.output(str(output_file))
         else:
             suffix = "md" if export_format == "md" else "txt"
             output_file = Path(dest_folder) / f"{project_name}-{date_str}-part{part}.{suffix}"
@@ -126,7 +146,10 @@ def generate_output(
                 data["files"].append(line_data)
                 token_count += block_tokens
             else:
-                line = f"{rel_path.as_posix()}\n"
+                if export_format == "html":
+                    line = f"<p>{rel_path.as_posix()}</p>\n"
+                else:
+                    line = f"{rel_path.as_posix()}\n"
                 block_tokens = estimate_token_count(line)
                 if token_count + block_tokens > max_tokens:
                     output_files.append(_flush())
@@ -156,10 +179,19 @@ def generate_output(
         else:
             new_lines = []
             if include_heading:
-                new_lines.append(f"## {rel_path.as_posix()}\n")
+                if export_format == "html":
+                    new_lines.append(f"<h2>{rel_path.as_posix()}</h2>\n")
+                else:
+                    new_lines.append(f"## {rel_path.as_posix()}\n")
             if export_format == "md" and use_code_block:
                 lang = LANG_MAP.get(path.suffix, '')
                 new_lines.append(f"```{lang}\n{content}\n```\n\n")
+            elif export_format == "html":
+                if use_code_block:
+                    lang = LANG_MAP.get(path.suffix, '')
+                    new_lines.append(f"<pre><code class='language-{lang}'>" + content + "</code></pre>\n\n")
+                else:
+                    new_lines.append(f"<pre>{content}</pre>\n\n")
             else:
                 new_lines.append(f"{content}\n\n")
             block = ''.join(new_lines)
