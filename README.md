@@ -9,7 +9,7 @@
 - Live preview window to see the generated output before exporting
 - Default filters for file extensions and folders (e.g., skip `.env`, `node_modules`, `.git`, etc.)
 - Saves and loads user settings to/from a JSON file
-- Choose export format (TXT, Markdown or JSON) and optionally include code blocks and headings
+- Choose export format (TXT, Markdown, JSON, HTML or PDF) and optionally include code blocks and headings
 - Optionally export only the file tree without contents
 - Switch between dark and light mode, with buttons and fields adopting dark colors when the theme is set to "dark"
 - Files listed in a `.gitignore` file are automatically deselected
@@ -59,7 +59,7 @@ The file `promptpack.py` simply launches the application.
 2. **Select Files**: Opens an expandable tree of all folders and files. You can include/exclude each item via checkboxes.
    - Default selections are based on the current settings.
 3. **Settings**: Define default allowed extensions, excluded folders and files. Also choose:
-   - Export format (txt, md, json)
+   - Export format (txt, md, json, html, pdf)
    - Include file headings
    - Use code blocks for each file (Markdown only)
    - Export only the file tree
@@ -138,7 +138,7 @@ python -m promptpack.cli ./input ./out --no-heading --no-code-block
 | ----------------- | ------------------------------------------------------------------- |
 | `source`          | Source folder to analyze                                            |
 | `dest`            | Destination folder for the generated output                         |
-| `--format`        | Export format: `txt`, `md`, `json`                                  |
+| `--format`        | Export format: `txt`, `md`, `json`, `html`, `pdf`                                  |
 | `--tree-only`     | Export only the folder structure, without file contents             |
 | `--no-heading`    | Do not include headings for each file                               |
 | `--no-code-block` | Do not wrap contents in code blocks (Markdown only)                 |
