@@ -22,3 +22,8 @@ def load_translations(lang: str) -> dict[str, str]:
         except Exception:
             _cache[lang] = {}
     return _cache[lang]
+
+
+def available_languages() -> list[str]:
+    """Ritorna l'elenco dei codici lingua disponibili."""
+    return sorted(p.stem for p in LOCALES_DIR.glob("*.json"))

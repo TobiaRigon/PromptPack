@@ -9,7 +9,7 @@ import markdown
 from .settings import load_settings, save_settings
 from pathspec import PathSpec
 from .utils import apply_icon, estimate_token_count, LANG_MAP, generate_output, sanitize_sensitive_data
-from .i18n import load_translations
+from .i18n import load_translations, available_languages
 
 EN_TRANSLATIONS = load_translations("eng")
 
@@ -344,7 +344,7 @@ class PromptPackApp:
         ttk.Radiobutton(win, text=self.t("dark"), variable=self.theme, value="dark", command=self.apply_theme).pack(pady=5)
 
         ttk.Label(win, text=self.t("language"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
-        language_options = ["eng", "it"]
+        language_options = available_languages()
         ttk.OptionMenu(win, self.language, self.language.get(), *language_options, command=lambda *_: None).pack(pady=5)
 
         def save_and_close():
