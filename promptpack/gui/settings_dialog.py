@@ -93,11 +93,14 @@ def configure_settings(app):
 
     ttk.Label(scrollable, text=app.t("output_opts"), style="Heading.TLabel").pack(padx=10, pady=(20, 5))
     ttk.Label(scrollable, text=app.t("export_format")).pack(pady=(5, 0))
-    ttk.Radiobutton(scrollable, text="TXT", variable=app.export_format, value="txt").pack(pady=2)
-    ttk.Radiobutton(scrollable, text="Markdown", variable=app.export_format, value="md").pack(pady=2)
-    ttk.Radiobutton(scrollable, text="HTML", variable=app.export_format, value="html").pack(pady=2)
-    ttk.Radiobutton(scrollable, text="PDF", variable=app.export_format, value="pdf").pack(pady=2)
-    ttk.Radiobutton(scrollable, text="JSON", variable=app.export_format, value="json").pack(pady=2)
+    format_combo = ttk.Combobox(
+        scrollable,
+        textvariable=app.export_format,
+        values=["txt", "md", "html", "pdf", "json"],
+        state="readonly",
+    )
+    format_combo.set(app.export_format.get())
+    format_combo.pack(pady=5)
     ttk.Checkbutton(scrollable, text=app.t("include_headings"), variable=app.include_heading).pack(pady=5)
     ttk.Checkbutton(scrollable, text=app.t("use_code"), variable=app.use_code_block).pack(pady=5)
     ttk.Checkbutton(scrollable, text=app.t("tree_only"), variable=app.tree_only).pack(pady=5)

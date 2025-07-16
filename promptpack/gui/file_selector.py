@@ -110,6 +110,11 @@ def select_files(app):
     vsb.grid(row=0, column=1, sticky="ns")
     hsb.grid(row=1, column=0, sticky="ew")
 
+    tree.bind("<Enter>", lambda e: tree.focus_set())
+    tree.bind("<MouseWheel>", lambda e: tree.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+    tree.bind("<Button-4>", lambda e: tree.yview_scroll(-1, "units"))
+    tree.bind("<Button-5>", lambda e: tree.yview_scroll(1, "units"))
+
     token_label = ttk.Label(selector, text="")
     token_label.pack(pady=2)
 
@@ -117,38 +122,43 @@ def select_files(app):
     checkbox_items = {}
     all_state = tk.BooleanVar(value=False)
 
+    def insert_node(parent, path: Path):
+        if path.is_dir():
+            node = tree.insert(parent, "end", text=path.name, values=(str(path), "dir"))
+            tree.insert(node, "end", values=("dummy", "dummy"))
+        else:
+            if ext_var.get() != "All" and path.suffix.lower() != ext_var.get().lower():
+                return
+            term = search_var.get().lower()
+            if term and term not in path.name.lower():
+                return
+            var = checkbox_vars.get(str(path))
+            if var is None:
+                default_checked = (
+                    is_valid(app, path)
+                    and not any(skip in path.parts for skip in app.settings["excluded_dirs"])
+                    and not (
+                        app.gitignore_spec
+                        and app.gitignore_spec.match_file(str(path.relative_to(folder)))
+                    )
+                )
+                var = tk.BooleanVar(value=(path in app.selected_files or default_checked))
+                checkbox_vars[str(path)] = var
+            item = tree.insert(
+                parent,
+                "end",
+                text=f"[{'x' if var.get() else ' '}] {path.name}",
+                values=(str(path), "file"),
+            )
+            checkbox_items[str(path)] = item
+
 
     def refresh_tree(*_args):
         tree.delete(*tree.get_children())
 
-        def insert_node(parent, path: Path):
-            if path.is_dir():
-                node = tree.insert(parent, 'end', text=path.name, values=(str(path), 'dir'))
-                tree.insert(node, 'end', values=('dummy', 'dummy'))
-            else:
-                if ext_var.get() != 'All' and path.suffix.lower() != ext_var.get().lower():
-                    return
-                term = search_var.get().lower()
-                if term and term not in path.name.lower():
-                    return
-                var = checkbox_vars.get(str(path))
-                if var is None:
-                    default_checked = (
-                        is_valid(app, path)
-                        and not any(skip in path.parts for skip in app.settings["excluded_dirs"])
-                        and not (
-                            app.gitignore_spec
-                            and app.gitignore_spec.match_file(str(path.relative_to(folder)))
-                        )
-                    )
-                    var = tk.BooleanVar(value=(path in app.selected_files or default_checked))
-                    checkbox_vars[str(path)] = var
-                item = tree.insert(parent, 'end', text=f"[{'x' if var.get() else ' '}] {path.name}", values=(str(path), 'file'))
-                checkbox_items[str(path)] = item
-
         def worker():
             for child in sorted(Path(folder).iterdir()):
-                selector.after(0, lambda c=child: insert_node('', c))
+                selector.after(0, lambda c=child: insert_node("", c))
             selector.after(0, update_token_label)
 
         threading.Thread(target=worker, daemon=True).start()
