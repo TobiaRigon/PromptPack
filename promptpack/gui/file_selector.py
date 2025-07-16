@@ -1,4 +1,5 @@
 import tkinter as tk
+import threading
 from tkinter import Toplevel, ttk, messagebox
 from pathlib import Path
 from ..settings import save_settings
@@ -133,39 +134,91 @@ def select_files(app):
                 return True
         return False
 
+    PLACEHOLDER = '__placeholder__'
+
+    def insert_file(parent, path: Path):
+        var = checkbox_vars.get(str(path))
+        if var is None:
+            default_checked = (
+                is_valid(app, path)
+                and not any(skip in path.parts for skip in app.settings["excluded_dirs"])
+                and not (
+                    app.gitignore_spec
+                    and app.gitignore_spec.match_file(str(path.relative_to(folder)))
+                )
+            )
+            var = tk.BooleanVar(value=(path in app.selected_files or default_checked))
+            checkbox_vars[str(path)] = var
+        item = tree.insert(parent, 'end', text=f"[{'x' if var.get() else ' '}] {path.name}", values=(str(path), 'file'))
+        checkbox_items[str(path)] = item
+
+    def insert_dir(parent, path: Path):
+        node = tree.insert(parent, 'end', text=path.name, values=(str(path), 'dir'), open=False)
+        tree.insert(node, 'end', text='', values=(PLACEHOLDER, 'placeholder'))
+        return node
+
+    def load_children(node, path: Path):
+        for child in tree.get_children(node):
+            vals = tree.item(child, 'values')
+            if len(vals) >= 2 and vals[1] == 'placeholder':
+                tree.delete(child)
+
+        def worker():
+            entries = []
+            for child in sorted(path.iterdir()):
+                if child.is_dir():
+                    if not dir_has_visible(child):
+                        continue
+                    entries.append(('dir', child))
+                else:
+                    if ext_var.get() != 'All' and child.suffix.lower() != ext_var.get().lower():
+                        continue
+                    term = search_var.get().lower()
+                    if term and term not in child.name.lower():
+                        continue
+                    entries.append(('file', child))
+
+            def update():
+                for typ, c in entries:
+                    if typ == 'dir':
+                        insert_dir(node, c)
+                    else:
+                        insert_file(node, c)
+                update_token_label()
+
+            app.root.after(0, update)
+
+        threading.Thread(target=worker, daemon=True).start()
+
     def refresh_tree(*_args):
         tree.delete(*tree.get_children())
 
-        def insert_items(parent, path: Path):
-            if path.is_dir():
-                if not dir_has_visible(path):
-                    return
-                node = tree.insert(parent, 'end', text=path.name, values=(str(path), 'dir'), open=False)
-                for child in sorted(path.iterdir()):
-                    insert_items(node, child)
-            else:
-                if ext_var.get() != 'All' and path.suffix.lower() != ext_var.get().lower():
-                    return
-                term = search_var.get().lower()
-                if term and term not in path.name.lower():
-                    return
-                var = checkbox_vars.get(str(path))
-                if var is None:
-                    default_checked = (
-                        is_valid(app, path)
-                        and not any(skip in path.parts for skip in app.settings["excluded_dirs"])
-                        and not (
-                            app.gitignore_spec
-                            and app.gitignore_spec.match_file(str(path.relative_to(folder)))
-                        )
-                    )
-                    var = tk.BooleanVar(value=(path in app.selected_files or default_checked))
-                    checkbox_vars[str(path)] = var
-                item = tree.insert(parent, 'end', text=f"[{'x' if var.get() else ' '}] {path.name}", values=(str(path), 'file'))
-                checkbox_items[str(path)] = item
+        def worker():
+            entries = []
+            for child in sorted(Path(folder).iterdir()):
+                if child.is_dir():
+                    if not dir_has_visible(child):
+                        continue
+                    entries.append(('dir', child))
+                else:
+                    if ext_var.get() != 'All' and child.suffix.lower() != ext_var.get().lower():
+                        continue
+                    term = search_var.get().lower()
+                    if term and term not in child.name.lower():
+                        continue
+                    entries.append(('file', child))
 
-        insert_items('', Path(folder))
-        update_token_label()
+            def update():
+                for typ, c in entries:
+                    if typ == 'dir':
+                        insert_dir('', c)
+                    else:
+                        insert_file('', c)
+                update_token_label()
+
+            app.root.after(0, update)
+
+        threading.Thread(target=worker, daemon=True).start()
 
 
     def update_token_label():
@@ -200,6 +253,19 @@ def select_files(app):
             update_token_label()
 
     tree.bind("<Button-1>", toggle_checkbox)
+
+    def on_open(event):
+        item = tree.focus()
+        if not item:
+            return
+        values = tree.item(item, 'values')
+        if len(values) < 2:
+            return
+        path_str, typ = values
+        if typ == 'dir':
+            load_children(item, Path(path_str))
+
+    tree.bind("<<TreeviewOpen>>", on_open)
 
     def toggle_visible_all(new_val: bool):
         def apply_to_item(item):
