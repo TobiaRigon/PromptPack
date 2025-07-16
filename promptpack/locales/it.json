@@ -49,5 +49,6 @@
     "need_folders": "Seleziona sia la cartella sorgente che quella di destinazione",
     "token_header": "Stima token: {count} (restano {remaining})\n{sep}\n",
     "tokens": "Token: {tokens} / {max}",
-    "project_label": "Progetto: {name} - {date}"
+    "project_label": "Progetto: {name} - {date}",
+    "preview_disabled_large": "Anteprima disabilitata per il file {path} (> {size} byte)"
 }

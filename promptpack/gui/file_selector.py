@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import Toplevel, ttk, messagebox
+import threading
 from pathlib import Path
 from ..settings import save_settings
 from ..utils import apply_icon
@@ -109,6 +110,11 @@ def select_files(app):
     vsb.grid(row=0, column=1, sticky="ns")
     hsb.grid(row=1, column=0, sticky="ew")
 
+    tree.bind("<Enter>", lambda e: tree.focus_set())
+    tree.bind("<MouseWheel>", lambda e: tree.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+    tree.bind("<Button-4>", lambda e: tree.yview_scroll(-1, "units"))
+    tree.bind("<Button-5>", lambda e: tree.yview_scroll(1, "units"))
+
     token_label = ttk.Label(selector, text="")
     token_label.pack(pady=2)
 
@@ -116,56 +122,64 @@ def select_files(app):
     checkbox_items = {}
     all_state = tk.BooleanVar(value=False)
 
-    def dir_has_visible(path: Path) -> bool:
-        term = search_var.get().lower()
-        ext = ext_var.get()
-        if term and term in path.name.lower():
-            return True
-        for p in path.iterdir():
-            if p.is_dir():
-                if dir_has_visible(p):
-                    return True
-            else:
-                if ext != "All" and p.suffix.lower() != ext.lower():
-                    continue
-                if term and term not in p.name.lower():
-                    continue
-                return True
-        return False
+    def insert_node(parent, path: Path):
+        if path.is_dir():
+            node = tree.insert(parent, "end", text=path.name, values=(str(path), "dir"))
+            tree.insert(node, "end", values=("dummy", "dummy"))
+        else:
+            if ext_var.get() != "All" and path.suffix.lower() != ext_var.get().lower():
+                return
+            term = search_var.get().lower()
+            if term and term not in path.name.lower():
+                return
+            var = checkbox_vars.get(str(path))
+            if var is None:
+                default_checked = (
+                    is_valid(app, path)
+                    and not any(skip in path.parts for skip in app.settings["excluded_dirs"])
+                    and not (
+                        app.gitignore_spec
+                        and app.gitignore_spec.match_file(str(path.relative_to(folder)))
+                    )
+                )
+                var = tk.BooleanVar(value=(path in app.selected_files or default_checked))
+                checkbox_vars[str(path)] = var
+            item = tree.insert(
+                parent,
+                "end",
+                text=f"[{'x' if var.get() else ' '}] {path.name}",
+                values=(str(path), "file"),
+            )
+            checkbox_items[str(path)] = item
+
 
     def refresh_tree(*_args):
         tree.delete(*tree.get_children())
 
-        def insert_items(parent, path: Path):
-            if path.is_dir():
-                if not dir_has_visible(path):
-                    return
-                node = tree.insert(parent, 'end', text=path.name, values=(str(path), 'dir'), open=False)
-                for child in sorted(path.iterdir()):
-                    insert_items(node, child)
-            else:
-                if ext_var.get() != 'All' and path.suffix.lower() != ext_var.get().lower():
-                    return
-                term = search_var.get().lower()
-                if term and term not in path.name.lower():
-                    return
-                var = checkbox_vars.get(str(path))
-                if var is None:
-                    default_checked = (
-                        is_valid(app, path)
-                        and not any(skip in path.parts for skip in app.settings["excluded_dirs"])
-                        and not (
-                            app.gitignore_spec
-                            and app.gitignore_spec.match_file(str(path.relative_to(folder)))
-                        )
-                    )
-                    var = tk.BooleanVar(value=(path in app.selected_files or default_checked))
-                    checkbox_vars[str(path)] = var
-                item = tree.insert(parent, 'end', text=f"[{'x' if var.get() else ' '}] {path.name}", values=(str(path), 'file'))
-                checkbox_items[str(path)] = item
+        def worker():
+            for child in sorted(Path(folder).iterdir()):
+                selector.after(0, lambda c=child: insert_node("", c))
+            selector.after(0, update_token_label)
 
-        insert_items('', Path(folder))
-        update_token_label()
+        threading.Thread(target=worker, daemon=True).start()
+
+    def populate_node(event):
+        node = tree.focus()
+        values = tree.item(node, "values")
+        if len(values) < 2 or values == ("dummy", "dummy"):
+            return
+        path = Path(values[0])
+        children = tree.get_children(node)
+        if children and tree.item(children[0], "values") == ("dummy", "dummy"):
+            tree.delete(children[0])
+
+            def worker():
+                for child in sorted(path.iterdir()):
+                    selector.after(0, lambda c=child: insert_node(node, c))
+
+            threading.Thread(target=worker, daemon=True).start()
+
+    tree.bind("<<TreeviewOpen>>", populate_node)
 
 
     def update_token_label():
@@ -180,7 +194,19 @@ def select_files(app):
     def update_preview_live():
         if app.enable_preview.get():
             files = {Path(p) for p, var in checkbox_vars.items() if var.get()}
-            app.build_preview_async(files)
+            limit = app.settings.get("preview_size_limit", 1_000_000)
+            for f in files:
+                try:
+                    if f.stat().st_size > limit:
+                        app.enable_preview.set(False)
+                        if app.preview_window and app.preview_window.winfo_exists():
+                            app.preview_window.destroy()
+                        messagebox.showinfo(app.t("preview"), app.t("preview_disabled_large", path=f.name, size=limit))
+                        break
+                except Exception:
+                    continue
+            else:
+                app.build_preview_async(files)
         update_token_label()
 
     def toggle_checkbox(event):

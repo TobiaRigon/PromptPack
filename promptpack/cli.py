@@ -29,7 +29,7 @@ def main():
     parser = argparse.ArgumentParser(description="PromptPack CLI")
     parser.add_argument("source", help="cartella sorgente")
     parser.add_argument("dest", help="cartella di destinazione")
-    parser.add_argument("--format", choices=["txt", "md", "json"], dest="format")
+    parser.add_argument("--format", choices=["txt", "md", "json", "html", "pdf"], dest="format")
     parser.add_argument("--tree-only", action="store_true")
     parser.add_argument("--no-heading", action="store_true")
     parser.add_argument("--no-code-block", action="store_true")

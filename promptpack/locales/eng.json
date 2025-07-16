@@ -49,5 +49,6 @@
     "need_folders": "Please select both source and destination folders",
     "token_header": "Token estimate: {count} (remaining {remaining})\n{sep}\n",
     "tokens": "Tokens: {tokens} / {max}",
-    "project_label": "Project: {name} - {date}"
+    "project_label": "Project: {name} - {date}",
+    "preview_disabled_large": "Preview disabled for large file {path} (> {size} bytes)"
 }
