@@ -15,6 +15,7 @@ DEFAULT_SETTINGS = {
     "use_code_block": True,
     "theme": "dark",
     "language": "eng",
+    "token_model": "gpt",
     # Maximum tokens per preview or export file
     "max_tokens": 200_000,
     # Remember last source folder and selected files
@@ -39,6 +40,8 @@ def load_settings():
                     data["last_selected_files"] = DEFAULT_SETTINGS["last_selected_files"]
                 if "language" not in data:
                     data["language"] = DEFAULT_SETTINGS["language"]
+                if "token_model" not in data:
+                    data["token_model"] = DEFAULT_SETTINGS["token_model"]
                 return {**DEFAULT_SETTINGS, **data}
         except Exception:
             return DEFAULT_SETTINGS.copy()

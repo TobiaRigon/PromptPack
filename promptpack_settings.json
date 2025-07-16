@@ -22,6 +22,7 @@
     "use_code_block": true,
     "theme": "dark",
     "language": "eng",
+    "token_model": "gpt",
     "max_tokens": 200000,
     "last_start_folder": "",
     "last_selected_files": []
