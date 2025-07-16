@@ -93,9 +93,10 @@ class PromptPackApp:
 
         self.preview_window = None
         self.preview_text = None
-        self.progress_win = None
+        self.progress_frame = None
         self.progress_bar = None
         self.progress_var = tk.IntVar(value=0)
+        self.limit_warning_displayed = False
 
         style = ttk.Style(self.root)
         style.configure("Heading.TLabel", font=("TkDefaultFont", 15, "bold"))
@@ -286,24 +287,22 @@ class PromptPackApp:
                 self.preview_text.configure(bg=palette["background"], fg=palette["foreground"])
 
     def show_progress(self, message: str, maximum: int | None = None):
-        if self.progress_win and self.progress_win.winfo_exists():
-            self.progress_win.destroy()
-        self.progress_win = Toplevel(self.root)
-        self.progress_win.title(message)
-        apply_icon(self.progress_win)
-        ttk.Label(self.progress_win, text=message).pack(padx=10, pady=10)
+        if self.progress_frame:
+            self.progress_frame.destroy()
+        self.progress_var.set(0)
+        self.progress_frame = ttk.Frame(self.root)
+        self.progress_frame.grid(row=9, column=0, columnspan=3, pady=(10, 5))
+        ttk.Label(self.progress_frame, text=message).pack(padx=10, pady=5)
         mode = "indeterminate" if maximum is None else "determinate"
         self.progress_bar = ttk.Progressbar(
-            self.progress_win,
+            self.progress_frame,
             variable=self.progress_var,
             maximum=maximum if maximum is not None else 100,
             mode=mode,
         )
-        self.progress_bar.pack(padx=10, pady=10)
+        self.progress_bar.pack(padx=10, pady=5, fill="x", expand=True)
         if mode == "indeterminate":
             self.progress_bar.start()
-        self.progress_win.transient(self.root)
-        self.progress_win.grab_set()
 
     def update_progress(self, value: int, maximum: int):
         if self.progress_bar and self.progress_bar["mode"] == "determinate":
@@ -315,8 +314,10 @@ class PromptPackApp:
         if self.progress_bar:
             if self.progress_bar["mode"] == "indeterminate":
                 self.progress_bar.stop()
-        if self.progress_win and self.progress_win.winfo_exists():
-            self.progress_win.destroy()
+        if self.progress_frame:
+            self.progress_frame.destroy()
+            self.progress_frame = None
+            self.progress_bar = None
 
     def build_preview_async(self, files):
         self.show_progress(self.t("preview"))
@@ -735,12 +736,17 @@ class PromptPackApp:
         ).pack(pady=5)
 
     def compute_token_count(self, included_files):
-        preview_lines = self.generate_preview_lines(self.start_folder.get(), included_files)
+        preview_lines = self.generate_preview_lines(
+            self.start_folder.get(), included_files, warn_on_limit=False
+        )
         full_text = "\n".join(preview_lines)
         return estimate_token_count(full_text)
 
     def get_preview_text(self, included_files):
-        preview_lines = self.generate_preview_lines(self.start_folder.get(), included_files)
+        self.limit_warning_displayed = False
+        preview_lines = self.generate_preview_lines(
+            self.start_folder.get(), included_files, warn_on_limit=True
+        )
         full_text = "\n".join(preview_lines)
         token_count = estimate_token_count(full_text)
         max_tokens = self.settings.get("max_tokens", 200000)
@@ -748,7 +754,7 @@ class PromptPackApp:
         header = self.t("token_header", count=token_count, remaining=remaining, sep="="*40)
         return header + full_text
 
-    def generate_preview_lines(self, start_folder, included_files):
+    def generate_preview_lines(self, start_folder, included_files, warn_on_limit=True):
         lines = []
         project_name = Path(start_folder).name
         date_str = datetime.now().strftime('%Y%m%d')
@@ -783,10 +789,12 @@ class PromptPackApp:
             text = ''.join(chunk)
             tokens = estimate_token_count(text)
             if token_count + tokens > max_tokens:
-                messagebox.showwarning(
-                    self.t("limit_reached"),
-                    self.t("limit_msg", max=max_tokens),
-                )
+                if warn_on_limit and not self.limit_warning_displayed:
+                    messagebox.showwarning(
+                        self.t("limit_reached"),
+                        self.t("limit_msg", max=max_tokens),
+                    )
+                    self.limit_warning_displayed = True
                 break
             lines.extend(chunk)
             token_count += tokens
