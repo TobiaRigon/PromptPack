@@ -63,6 +63,33 @@ def select_files(app):
         foreground=palette["foreground"],
     )
 
+    controls = ttk.Frame(selector)
+    controls.pack(fill=tk.X, padx=5, pady=5)
+
+    search_var = tk.StringVar()
+    ttk.Label(controls, text="Search:").pack(side="left")
+    search_entry = ttk.Entry(controls, textvariable=search_var)
+    search_entry.pack(side="left", fill="x", expand=True, padx=5)
+
+    ext_var = tk.StringVar(value="All")
+    ext_combo = ttk.Combobox(
+        controls,
+        textvariable=ext_var,
+        values=["All", *app.settings["allowed_exts"]],
+        state="readonly",
+        width=7,
+    )
+    ext_combo.pack(side="left", padx=5)
+
+    select_visible_var = tk.BooleanVar(value=False)
+    select_visible_cb = ttk.Checkbutton(
+        controls,
+        text=app.t("select_deselect"),
+        variable=select_visible_var,
+        command=lambda: toggle_visible_all(select_visible_var.get()),
+    )
+    select_visible_cb.pack(side="left")
+
     frame = ttk.Frame(selector)
     frame.pack(fill=tk.BOTH, expand=True)
     frame.columnconfigure(0, weight=1)
@@ -89,33 +116,66 @@ def select_files(app):
     checkbox_items = {}
     all_state = tk.BooleanVar(value=False)
 
+    def dir_has_visible(path: Path) -> bool:
+        term = search_var.get().lower()
+        ext = ext_var.get()
+        if term and term in path.name.lower():
+            return True
+        for p in path.iterdir():
+            if p.is_dir():
+                if dir_has_visible(p):
+                    return True
+            else:
+                if ext != "All" and p.suffix.lower() != ext.lower():
+                    continue
+                if term and term not in p.name.lower():
+                    continue
+                return True
+        return False
+
+    def refresh_tree(*_args):
+        tree.delete(*tree.get_children())
+
+        def insert_items(parent, path: Path):
+            if path.is_dir():
+                if not dir_has_visible(path):
+                    return
+                node = tree.insert(parent, 'end', text=path.name, values=(str(path), 'dir'), open=False)
+                for child in sorted(path.iterdir()):
+                    insert_items(node, child)
+            else:
+                if ext_var.get() != 'All' and path.suffix.lower() != ext_var.get().lower():
+                    return
+                term = search_var.get().lower()
+                if term and term not in path.name.lower():
+                    return
+                var = checkbox_vars.get(str(path))
+                if var is None:
+                    default_checked = (
+                        is_valid(app, path)
+                        and not any(skip in path.parts for skip in app.settings["excluded_dirs"])
+                        and not (
+                            app.gitignore_spec
+                            and app.gitignore_spec.match_file(str(path.relative_to(folder)))
+                        )
+                    )
+                    var = tk.BooleanVar(value=(path in app.selected_files or default_checked))
+                    checkbox_vars[str(path)] = var
+                item = tree.insert(parent, 'end', text=f"[{'x' if var.get() else ' '}] {path.name}", values=(str(path), 'file'))
+                checkbox_items[str(path)] = item
+
+        insert_items('', Path(folder))
+        update_token_label()
+
+
     def update_token_label():
         tokens = app.compute_token_count({Path(p) for p, var in checkbox_vars.items() if var.get()})
         max_tokens = app.settings.get("max_tokens", 200000)
         token_label.config(text=app.t("tokens", tokens=tokens, max=max_tokens))
 
-    def insert_items(parent, path: Path):
-        for p in sorted(path.iterdir()):
-            if p.is_dir():
-                node = tree.insert(parent, 'end', text=p.name, values=(str(p), "dir"), open=False)
-                insert_items(node, p)
-            else:
-                default_checked = (
-                    is_valid(app, p)
-                    and not any(skip in p.parts for skip in app.settings["excluded_dirs"])
-                    and not (
-                        app.gitignore_spec
-                        and app.gitignore_spec.match_file(str(p.relative_to(folder)))
-                    )
-                )
-                checked = p in app.selected_files or default_checked
-                var = tk.BooleanVar(value=checked)
-                item = tree.insert(parent, 'end', text=f"[{'x' if var.get() else ' '}] {p.name}", values=(str(p), "file"))
-                checkbox_vars[str(p)] = var
-                checkbox_items[str(p)] = item
-
-    insert_items('', Path(folder))
-    update_token_label()
+    refresh_tree()
+    search_var.trace_add("write", lambda *_: refresh_tree())
+    ext_var.trace_add("write", lambda *_: refresh_tree())
 
     def update_preview_live():
         if app.enable_preview.get():
@@ -141,6 +201,23 @@ def select_files(app):
 
     tree.bind("<Button-1>", toggle_checkbox)
 
+    def toggle_visible_all(new_val: bool):
+        def apply_to_item(item):
+            values = tree.item(item, "values")
+            if len(values) >= 2:
+                path_str, typ = values
+                if typ == "file" and path_str in checkbox_vars:
+                    var = checkbox_vars[path_str]
+                    var.set(new_val)
+                    tree.item(item, text=f"[{'x' if new_val else ' '}] {Path(path_str).name}")
+            for child in tree.get_children(item):
+                apply_to_item(child)
+
+        for it in tree.get_children(""):
+            apply_to_item(it)
+        update_preview_live()
+        update_token_label()
+
     def toggle_all():
         new_val = not all_state.get()
         all_state.set(new_val)
@@ -151,7 +228,6 @@ def select_files(app):
         update_preview_live()
         update_token_label()
 
-    ttk.Button(selector, text=app.t("select_deselect"), command=toggle_all).pack(pady=5)
 
     def confirm_selection():
         app.selected_files = {Path(p) for p, var in checkbox_vars.items() if var.get()}
