@@ -117,9 +117,6 @@ class PromptPackApp:
         self.preview_heading = ttk.Label(self.root, text=self.t("preview"), **heading_opts)
         self.preview_heading.grid(row=3, column=1, sticky="ew", padx=10, pady=(20, 5))
 
-        self.copy_btn = ttk.Button(self.root, text=self.t("copy"), command=self.copy_preview)
-        self.copy_btn.grid(row=4, column=0, pady=5)
-
         self.browser_btn = ttk.Button(self.root, text=self.t("browser"), command=self.preview_in_browser)
         self.browser_btn.grid(row=4, column=1, pady=5)
 
@@ -164,7 +161,6 @@ class PromptPackApp:
         self.browse_start_btn.config(text=self.t("browse"))
         self.select_files_btn.config(text=self.t("select_files"))
         self.preview_heading.config(text=self.t("preview"))
-        self.copy_btn.config(text=self.t("copy"))
         self.browser_btn.config(text=self.t("browser"))
         self.live_preview_cb.config(text=self.t("live_preview"))
         self.output_heading.config(text=self.t("output"))
