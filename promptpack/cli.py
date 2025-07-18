@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 from .settings import load_settings
 from .utils import generate_output
+from .tokenizer import set_default_model
 from pathspec import PathSpec
 
 
@@ -33,8 +34,12 @@ def main():
     parser.add_argument("--no-heading", action="store_true")
     parser.add_argument("--no-code-block", action="store_true")
     parser.add_argument("--max-tokens", type=int)
+    parser.add_argument("--model", choices=["gpt", "claude", "gemini"], help="tokenizer model")
     parser.add_argument("--progress", action="store_true")
     args = parser.parse_args()
+
+    if args.model:
+        set_default_model(args.model)
 
     settings = load_settings()
     export_format = args.format or settings.get("export_format", "md")
